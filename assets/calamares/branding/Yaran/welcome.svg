@@ -17,6 +17,12 @@
   <circle cx="690" cy="210" r="260" fill="url(#glow)"/>
   <path d="M0 410c170-68 267 34 420-26s299-124 500-61v197H0z" fill="#30213f" opacity=".72"/>
   <path d="M0 455c176-50 287 40 466-14s305-77 454-45v124H0z" fill="#1b2933" opacity=".9"/>
+  <g transform="translate(690 210) scale(0.44) translate(-256 -256)">
+    <rect x="56" y="56" width="400" height="400" rx="80" fill="#9738ba"/>
+    <path d="M140 132 L256 260 L372 132 M256 260 V380"
+          fill="none" stroke="#ffffff" stroke-width="62"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
   <text x="76" y="170" fill="#d7c8e3" font-family="Noto Sans, sans-serif" font-size="18" letter-spacing="3">WELCOME TO</text>
   <text x="72" y="236" fill="#fff" font-family="Noto Sans, sans-serif" font-size="54" font-weight="700">Yaran Linux</text>
   <rect x="78" y="265" width="60" height="4" rx="2" fill="#c07de0"/>
