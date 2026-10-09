@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# newt (used by whiptail) reads this palette for every dialog. Use the
+# 256-color palette so the background is visibly purple on a local console.
+export NEWT_COLORS='root=white,magenta
+window=white,magenta
+border=white,magenta
+title=white,magenta
+textbox=white,magenta
+button=magenta,white
+compactbutton=magenta,white
+listbox=white,magenta
+actlistbox=white,blue
+actsellistbox=white,blue
+label=white,magenta
+checkbox=white,magenta
+actcheckbox=magenta,white
+entry=white,blue
+disentry=gray,magenta
+helpline=white,magenta
+roottext=white,magenta
+emptyscale=white,magenta
+fullscale=white,blue
+ منف=white,magenta'
+
+TARGET=/mnt/persisos-install
+LOG=$(mktemp /tmp/persisos-installer.XXXXXX)
+DISK=
+PASSWORD=
+PASSWORD_AGAIN=
+KEEP_LOG=0
+
+cleanup() {
+    # Unmount in reverse order. --recursive on each nested path can unmount
+    # later entries unexpectedly, so let the explicit order do the work.
+    for path in "$TARGET/run" "$TARGET/sys/firmware/efi/efivars" \
+        "$TARGET/sys" "$TARGET/proc" "$TARGET/dev/pts" "$TARGET/dev" \
+        "$TARGET/boot/efi" "$TARGET"; do
+        if mountpoint -q "$path"; then
+            umount "$path" >>"$LOG" 2>&1 || umount -l "$path" >>"$LOG" 2>&1 || true
+        fi
+    done
+    rmdir "$TARGET" 2>/dev/null || true
+    [[ $KEEP_LOG == 1 ]] || rm -f "$LOG"
+    unset PASSWORD PASSWORD_AGAIN
+}
+trap cleanup EXIT
+
+fail() {
+    KEEP_LOG=1
+    whiptail --title 'Installation stopped' --scrolltext --msgbox \
+        "$1\n\nDetails: $LOG" 12 76 || true
+    exit 1
+}
+
+on_error() {
+    local status=$?
+    KEEP_LOG=1
+    printf 'Unexpected error (exit %s) at line %s: %s\n' \
+        "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" >>"$LOG"
+    whiptail --title 'Installation stopped' --scrolltext --msgbox \
+        "An unexpected installation error occurred (exit $status).\n\nDetails: $LOG" 12 76 || true
+    exit "$status"
+}
+trap on_error ERR
+
+[[ $EUID -eq 0 ]] || { echo 'Run this installer with sudo.' >&2; exit 1; }
+for command in whiptail lsblk sfdisk partprobe udevadm mkfs.ext4 mkfs.fat \
+    rsync mount umount mountpoint chroot grub-install update-grub blkid swapon \
+    awk grep sed sleep; do
+    command -v "$command" >/dev/null || { echo "Required command missing: $command" >&2; exit 1; }
+done
+if [[ ! -t 0 || ! -t 1 ]]; then
+    echo 'The installer needs an interactive terminal. Run it from a local console.' >&2
+    exit 1
+fi
+
+whiptail --title 'PersisOS Server Installer' --msgbox \
+    'This guided installer prepares a disk for PersisOS Server. The selected disk will be erased completely.' \
+    10 72 || exit 0
+
+# Exclude every disk that has a mounted child filesystem. This protects the
+# running live-media device as well as disks currently holding mounted data.
+mapfile -t DISKS < <(lsblk -dnpo NAME,TYPE | awk '$2 == "disk" {print $1}')
+MENU=()
+for device in "${DISKS[@]}"; do
+    if lsblk -nrpo MOUNTPOINT "$device" | awk 'NF {found=1} END {exit !found}'; then
+        continue
+    fi
+    in_use_by_swap=0
+    while IFS= read -r swap_device; do
+        [[ -b $swap_device ]] || continue
+        if lsblk -sno NAME "$swap_device" | grep -Fxq "${device#/dev/}"; then
+            in_use_by_swap=1
+            break
+        fi
+    done < <(swapon --show=NAME --noheadings)
+    (( in_use_by_swap == 0 )) || continue
+    read -r size model <<<"$(lsblk -dnpo SIZE,MODEL "$device")"
+    [[ -n ${size:-} ]] || continue
+    MENU+=("$device" "$size  |  ${model:-Unknown model}")
+done
+(( ${#MENU[@]} > 0 )) || fail 'No unused disks were found. Disconnect or unmount the disk you intend to erase, then try again.'
+
+DISK=$(whiptail --title 'Select installation disk' --menu \
+    'Choose the disk to erase and install PersisOS Server onto:' \
+    18 90 8 "${MENU[@]}" 3>&1 1>&2 2>&3) || exit 0
+[[ -b "$DISK" && $(lsblk -dnpo TYPE "$DISK") == disk ]] || fail 'The selected device is not a whole disk.'
+if lsblk -nrpo MOUNTPOINT "$DISK" | awk 'NF {found=1} END {exit !found}'; then
+    fail 'A filesystem on the selected disk is mounted. No changes were made.'
+fi
+while IFS= read -r swap_device; do
+    [[ -b $swap_device ]] || continue
+    if lsblk -sno NAME "$swap_device" | grep -Fxq "${DISK#/dev/}"; then
+        fail 'The selected disk contains active swap. Disable that swap and restart the installer.'
+    fi
+done < <(swapon --show=NAME --noheadings)
+
+HOSTNAME=$(whiptail --title 'System identity' --inputbox \
+    'Enter the hostname for the installed server:' 10 72 'persisos-server' \
+    3>&1 1>&2 2>&3) || exit 0
+[[ $HOSTNAME =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]] || \
+    fail 'Hostname must contain letters, numbers, and internal hyphens only.'
+HOSTNAME=${HOSTNAME,,}
+
+TIMEZONE=$(whiptail --title 'Time zone' --inputbox \
+    'Enter a time zone such as UTC or America/New_York:' 10 72 'UTC' \
+    3>&1 1>&2 2>&3) || exit 0
+[[ $TIMEZONE =~ ^[A-Za-z0-9_+./-]+$ && $TIMEZONE != *..* && \
+   -f "/usr/share/zoneinfo/$TIMEZONE" ]] || fail 'Choose a valid time zone present in the installed zoneinfo database.'
+
+PASSWORD=$(whiptail --title 'Administrator password' --passwordbox \
+    'Set a new password for the admin account:' 10 72 3>&1 1>&2 2>&3) || exit 0
+[[ -n $PASSWORD ]] || fail 'Password cannot be empty.'
+PASSWORD_AGAIN=$(whiptail --title 'Confirm password' --passwordbox \
+    'Enter the administrator password again:' 10 72 3>&1 1>&2 2>&3) || exit 0
+[[ $PASSWORD == "$PASSWORD_AGAIN" ]] || fail 'The passwords did not match.'
+
+if [[ -d /sys/firmware/efi ]]; then MODE=uefi; else MODE=bios; fi
+DETAILS=$(lsblk -dnpo NAME,SIZE,MODEL "$DISK" | sed 's/[[:space:]]\+/  /g')
+whiptail --title 'Confirm disk erase' --defaultno --yesno \
+    "Install hostname: $HOSTNAME\nTime zone: $TIMEZONE\nBoot mode: $MODE\n\nThe ENTIRE disk will be erased:\n$DETAILS\n\nContinue only if this is the correct disk." \
+    15 76 || exit 0
+TOKEN="ERASE $(basename "$DISK")"
+CONFIRM=$(whiptail --title 'Final confirmation' --inputbox \
+    "Type exactly:\n$TOKEN" 10 72 3>&1 1>&2 2>&3) || exit 0
+[[ $CONFIRM == "$TOKEN" ]] || fail 'Confirmation did not match. No disk changes were made.'
+
+if [[ $DISK =~ [0-9]$ ]]; then SEP=p; else SEP=; fi
+EFI_PART="${DISK}${SEP}1"
+ROOT_PART="${DISK}${SEP}2"
+step() { whiptail --title 'Installing PersisOS Server' --infobox "$1" 8 72; }
+run_logged() {
+    "$@" >>"$LOG" 2>&1 || fail "A required installation step failed:\n$*"
+}
+
+step 'Preparing disk partitions...'
+if [[ $MODE == uefi ]]; then
+    printf 'label: gpt\n,512M,U\n,,L\n' | sfdisk "$DISK" >>"$LOG" 2>&1 || fail 'Could not partition the selected disk.'
+else
+    printf 'label: gpt\n,2M,BIOS\n,,L\n' | sfdisk "$DISK" >>"$LOG" 2>&1 || fail 'Could not partition the selected disk.'
+fi
+run_logged partprobe "$DISK"
+run_logged udevadm settle
+for _ in {1..15}; do [[ -b "$ROOT_PART" ]] && break; sleep 1; done
+[[ -b "$ROOT_PART" ]] || fail 'The root partition did not appear after partitioning.'
+
+step 'Formatting system partitions...'
+if [[ $MODE == uefi ]]; then run_logged mkfs.fat -F32 -n PERSISOS_EFI "$EFI_PART"; fi
+run_logged mkfs.ext4 -F -L PERSISOS_ROOT "$ROOT_PART"
+mkdir -p "$TARGET"
+run_logged mount "$ROOT_PART" "$TARGET"
+if [[ $MODE == uefi ]]; then
+    mkdir -p "$TARGET/boot/efi"
+    run_logged mount "$EFI_PART" "$TARGET/boot/efi"
+fi
+
+step 'Copying the live system to disk. This can take several minutes...'
+run_logged rsync -aHAX --numeric-ids --delete \
+    --exclude=/dev/ --exclude=/proc/ --exclude=/sys/ --exclude=/run/ \
+    --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/live/ \
+    --exclude=/var/tmp/ --exclude=/etc/fstab --exclude=/etc/mtab \
+    / "$TARGET/"
+
+step 'Configuring hostname, administrator account, and filesystem mounts...'
+rm -f "$TARGET/etc/systemd/system/multi-user.target.wants/persisos-installer.service"
+printf '%s\n' "$HOSTNAME" >"$TARGET/etc/hostname"
+printf '%s\n' "$TIMEZONE" >"$TARGET/etc/timezone"
+ln -snf "/usr/share/zoneinfo/$TIMEZONE" "$TARGET/etc/localtime"
+printf '127.0.0.1 localhost\n127.0.1.1 %s\n\n::1 localhost ip6-localhost ip6-loopback\n' "$HOSTNAME" >"$TARGET/etc/hosts"
+ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
+[[ -n $ROOT_UUID ]] || fail 'Could not read the root filesystem UUID.'
+if [[ $MODE == uefi ]]; then
+    EFI_UUID=$(blkid -s UUID -o value "$EFI_PART")
+    [[ -n $EFI_UUID ]] || fail 'Could not read the EFI filesystem UUID.'
+    printf 'UUID=%s / ext4 errors=remount-ro 0 1\nUUID=%s /boot/efi vfat umask=0077 0 1\n' \
+        "$ROOT_UUID" "$EFI_UUID" >"$TARGET/etc/fstab"
+else
+    printf 'UUID=%s / ext4 errors=remount-ro 0 1\n' "$ROOT_UUID" >"$TARGET/etc/fstab"
+fi
+# The live installer runs as root and the only account created by the image is
+# admin. chpasswd requires an account:password record, not a bare password.
+printf 'admin:%s\n' "$PASSWORD" | chroot "$TARGET" chpasswd >>"$LOG" 2>&1 || fail 'Could not set the admin account password.'
+unset PASSWORD PASSWORD_AGAIN
+rm -f "$TARGET/etc/machine-id" "$TARGET/var/lib/dbus/machine-id"
+: >"$TARGET/etc/machine-id"
+
+step 'Mounting system interfaces and installing the bootloader...'
+mkdir -p "$TARGET/dev/pts" "$TARGET/proc" "$TARGET/sys" "$TARGET/run"
+run_logged mount --rbind /dev "$TARGET/dev"
+run_logged mount -t proc proc "$TARGET/proc"
+run_logged mount -t sysfs sys "$TARGET/sys"
+run_logged mount --bind /run "$TARGET/run"
+if [[ $MODE == uefi ]]; then
+    mkdir -p "$TARGET/sys/firmware/efi/efivars"
+    if mountpoint -q /sys/firmware/efi/efivars; then
+        run_logged mount --bind /sys/firmware/efi/efivars "$TARGET/sys/firmware/efi/efivars"
+    fi
+    run_logged chroot "$TARGET" grub-install --target=x86_64-efi \
+        --efi-directory=/boot/efi --bootloader-id=PersisOS --removable
+else
+    run_logged chroot "$TARGET" grub-install --target=i386-pc "$DISK"
+fi
+run_logged chroot "$TARGET" update-grub
+
+whiptail --title 'Installation complete' --msgbox \
+    "PersisOS Server is installed on $DISK.\n\nHostname: $HOSTNAME\nTime zone: $TIMEZONE\nBoot mode: $MODE\n\nRemove the installation media before rebooting." \
+    12 72

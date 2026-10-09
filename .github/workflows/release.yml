@@ -1,0 +1,27 @@
+name: Release Build
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: PersisOS-2.0-amd64.json
+            runner: ubuntu-latest
+            artifact: persisos-amd64
+          - config: PersisOS-2.0-arm64.json
+            runner: ubuntu-24.04-arm
+            artifact: persisos-arm64
+          - config: PersisOS-Server-2.0-amd64.json
+            runner: ubuntu-latest
+            artifact: persisos-server-amd64
+    uses: ./.github/workflows/image.yml
+    with:
+      config: ${{ matrix.config }}
+      runner: ${{ matrix.runner }}
+      artifact: ${{ matrix.artifact }}
+      release: true
