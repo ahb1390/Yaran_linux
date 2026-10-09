@@ -1,0 +1,15 @@
+[Session]
+Theme=org.yaranlinux.desktop
+
+[kdeglobals][KDE]
+LookAndFeelPackage=org.yaranlinux.desktop
+
+[kdeglobals][Icons]
+Theme=breeze
+
+[Wallpaper]
+Image=Lake
+
+[ksplashrc][KSplash]
+Engine=KSplashQML
+Theme=org.yaranlinux.desktop

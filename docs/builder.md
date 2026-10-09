@@ -1,6 +1,6 @@
 # Building Debian-family live images
 
-`build.py` consumes a JSON manifest and assembles a live ISO. PersisOS branding,
+`build.py` consumes a JSON manifest and assembles a live ISO. Yaran Linux branding,
 packages and hooks live in its manifests and `hooks/`, not in the builder.
 Python 3.9 or newer is required; no third-party Python modules are needed.
 
@@ -96,7 +96,7 @@ The old unused `splash` key should be replaced by `boot_append`.
 
 Null passwords lock password authentication; they do not disable live session
 autologin or sudo configuration. Set `noautologin` in `boot_append` when needed.
-PersisOS manifests retain their existing published live passwords. Never use
+Yaran Linux manifests retain their existing published live passwords. Never use
 these defaults for a production installed system.
 
 ## Hooks and system configuration
@@ -141,7 +141,7 @@ failure; successful image artifacts and releases include checksums.
 
 ```sh
 python3 -m unittest discover -s tests -v
-for config in PersisOS*.json examples/*.json; do
+for config in Yaran*.json examples/*.json; do
   python3 build.py "$config" --validate
 done
 ```

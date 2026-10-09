@@ -8,7 +8,7 @@ if [ -z "$live_user" ]; then
     exit 0
 fi
 mkdir -p /etc/sddm.conf.d
-cat > /etc/sddm.conf.d/zz-persisos-live-autologin.conf << EOF
+cat > /etc/sddm.conf.d/zz-yaran-live-autologin.conf << EOF
 [Autologin]
 User=$live_user
 Session=plasma

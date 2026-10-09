@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Yaran Linux Theme
+Comment=Apply the Yaran Linux Plasma layout and appearance
+Exec=/usr/bin/yaran-apply-theme --quiet
+OnlyShowIn=KDE;
+X-KDE-autostart-phase=2
+X-KDE-StartupNotify=false
+NoDisplay=true

@@ -1,33 +1,33 @@
-name: Build & Validate PersisOS
+name: Build & Validate Yaran Linux
 
 on:
   push:
     branches: [main]
     paths:
-      - 'PersisOS-2.0-*.json'
-      - 'PersisOS-Server-2.0-*.json'
+      - 'Yaran-2.0-*.json'
+      - 'Yaran-Server-2.0-*.json'
       - 'build.py'
       - 'hooks/**'
       - 'scripts/**'
       - 'tests/**'
       - 'examples/**'
       - 'assets/**'
-      - 'persisos.svg'
+      - 'yaran.svg'
       - 'README.md'
       - 'docs/**'
       - '.github/workflows/**'
   pull_request:
     branches: [main]
     paths:
-      - 'PersisOS-2.0-*.json'
-      - 'PersisOS-Server-2.0-*.json'
+      - 'Yaran-2.0-*.json'
+      - 'Yaran-Server-2.0-*.json'
       - 'build.py'
       - 'hooks/**'
       - 'scripts/**'
       - 'tests/**'
       - 'examples/**'
       - 'assets/**'
-      - 'persisos.svg'
+      - 'yaran.svg'
       - 'README.md'
       - 'docs/**'
       - '.github/workflows/**'
@@ -45,7 +45,7 @@ jobs:
       - name: Unit tests and manifests
         run: |
           python3 -m unittest discover -s tests -v
-          for config in PersisOS*.json examples/*.json; do
+          for config in Yaran*.json examples/*.json; do
             python3 build.py "$config" --validate
           done
           find hooks scripts -name '*.sh' -exec bash -n {} \;
@@ -62,14 +62,14 @@ jobs:
             runner: ubuntu-24.04-arm
     uses: ./.github/workflows/image.yml
     with:
-      config: PersisOS-2.0-${{ matrix.arch }}.json
+      config: Yaran-2.0-${{ matrix.arch }}.json
       runner: ${{ matrix.runner }}
-      artifact: persisos-${{ matrix.arch }}
+      artifact: yaran-${{ matrix.arch }}
 
   build-server:
     needs: validate
     uses: ./.github/workflows/image.yml
     with:
-      config: PersisOS-Server-2.0-amd64.json
+      config: Yaran-Server-2.0-amd64.json
       runner: ubuntu-latest
-      artifact: persisos-server-amd64
+      artifact: yaran-server-amd64

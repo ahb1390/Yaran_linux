@@ -1,11 +1,11 @@
 #!/bin/bash
 set -eu
-printf 'PersisOS Server 2.0 \\n \\l\n' > /etc/issue
-printf 'PersisOS Server 2.0\n' > /etc/issue.net
+printf 'Yaran Linux Server 2.0 \\n \\l\n' > /etc/issue
+printf 'Yaran Linux Server 2.0\n' > /etc/issue.net
 mkdir -p /etc/default/grub.d
-printf 'GRUB_DISTRIBUTOR="PersisOS Server 2.0"\n' > /etc/default/grub.d/50-persisos-server.cfg
+printf 'GRUB_DISTRIBUTOR="Yaran Linux Server 2.0"\n' > /etc/default/grub.d/50-yaran-server.cfg
 cat > /etc/motd << 'EOF'
-Welcome to PersisOS Server 2.0
+Welcome to Yaran Linux Server 2.0
 
 Live account: admin
 SSH is installed but disabled on live media. After changing the password, run:
@@ -14,6 +14,6 @@ SSH is installed but disabled on live media. After changing the password, run:
 
 Use nmcli for network configuration and nft for firewall management.
 
-To install PersisOS, use a local console and run:
-  install-persisos
+To install Yaran Linux, use a local console and run:
+  install-yaran
 EOF

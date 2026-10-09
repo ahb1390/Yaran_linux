@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 echo 'Applying server security settings'
-cat > /etc/sysctl.d/99-persisos-server.conf << 'EOF'
+cat > /etc/sysctl.d/99-yaran-server.conf << 'EOF'
 kernel.kptr_restrict=2
 kernel.dmesg_restrict=1
 kernel.yama.ptrace_scope=1

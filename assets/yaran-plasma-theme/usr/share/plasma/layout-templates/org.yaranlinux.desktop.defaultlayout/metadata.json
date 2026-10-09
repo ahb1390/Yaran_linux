@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LayoutTemplate",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux"
+            }
+        ],
+        "Description": "A top, full-width panel with the Yaran Linux default widget set.",
+        "Id": "org.yaranlinux.desktop.defaultlayout",
+        "License": "MIT",
+        "Name": "Yaran Linux 2.0 Default",
+        "Version": "2.0"
+    },
+    "X-Plasma-API": "javascript",
+    "X-Plasma-MainScript": "contents/layout.js"
+}

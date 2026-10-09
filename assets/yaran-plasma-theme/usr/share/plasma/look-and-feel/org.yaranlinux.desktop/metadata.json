@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux Team"
+            }
+        ],
+        "Category": "",
+        "Description": "The default Yaran Linux desktop look and feel with custom branding, accent colors, and smooth animations.",
+        "Id": "org.yaranlinux.desktop",
+        "License": "MIT",
+        "Name": "Yaran Linux",
+        "Version": "2.0"
+    },
+    "X-Plasma-MainScript": "contents/layouts/org.kde.plasma.desktop-layout.js"
+}

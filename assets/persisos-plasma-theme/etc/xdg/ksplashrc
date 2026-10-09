@@ -1,6 +1,0 @@
-[KSplash]
-Engine=KSplashQML
-Theme=org.persisos.desktop
-
-[General]
-EnableSplash=true

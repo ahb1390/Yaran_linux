@@ -10,15 +10,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - config: PersisOS-2.0-amd64.json
+          - config: Yaran-2.0-amd64.json
             runner: ubuntu-latest
-            artifact: persisos-amd64
-          - config: PersisOS-2.0-arm64.json
+            artifact: yaran-amd64
+          - config: Yaran-2.0-arm64.json
             runner: ubuntu-24.04-arm
-            artifact: persisos-arm64
-          - config: PersisOS-Server-2.0-amd64.json
+            artifact: yaran-arm64
+          - config: Yaran-Server-2.0-amd64.json
             runner: ubuntu-latest
-            artifact: persisos-server-amd64
+            artifact: yaran-server-amd64
     uses: ./.github/workflows/image.yml
     with:
       config: ${{ matrix.config }}

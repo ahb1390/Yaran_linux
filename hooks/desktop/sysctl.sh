@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 echo 'Applying kernel/network hardening sysctls'
-cat > /etc/sysctl.d/99-persisos-hardening.conf << 'EOF'
+cat > /etc/sysctl.d/99-yaran-hardening.conf << 'EOF'
 kernel.kptr_restrict=2
 kernel.dmesg_restrict=1
 kernel.yama.ptrace_scope=1

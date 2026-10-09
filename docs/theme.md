@@ -1,6 +1,6 @@
-# PersisOS Theme Guide
+# Yaran Linux Theme Guide
 
-This document describes the visual identity of PersisOS and where each part
+This document describes the visual identity of Yaran Linux and where each part
 of it lives, so future changes stay coherent.
 
 ## Design language: "violet night"
@@ -10,7 +10,7 @@ surface (boot splash, login, session accents) uses the same palette, the same
 typography rules, and restrained motion. Nothing bounces, nothing blinks
 fast, nothing competes with the logo.
 
-The logo itself (`persisos.svg`) is never restyled or recolored; all themes
+The logo itself (`yaran.svg`) is never restyled or recolored; all themes
 render it as-is.
 
 ## Palette
@@ -46,15 +46,15 @@ letter-spacing 1 and reduced opacity instead of grey colors.
 
 ## Components and file locations
 
-All paths are relative to `assets/persisos-plasma-theme/`.
+All paths are relative to `assets/yaran-plasma-theme/`.
 
 | Screen | File |
 |---|---|
-| Boot splash | `usr/share/plasma/look-and-feel/org.persisos.desktop/contents/splash/Splash.qml` |
-| Login (SDDM greeter) | `usr/share/sddm/themes/persisos-greeter/Main.qml` |
-| SDDM theme registration | `usr/share/sddm/themes/persisos-greeter/metadata.desktop` |
-| SDDM wallpaper | `usr/share/sddm/themes/persisos-greeter/theme.conf` |
-| SDDM selection | `etc/sddm.conf.d/persisos.conf` (`Current=persisos-greeter`) |
+| Boot splash | `usr/share/plasma/look-and-feel/org.yaranlinux.desktop/contents/splash/Splash.qml` |
+| Login (SDDM greeter) | `usr/share/sddm/themes/yaran-greeter/Main.qml` |
+| SDDM theme registration | `usr/share/sddm/themes/yaran-greeter/metadata.desktop` |
+| SDDM wallpaper | `usr/share/sddm/themes/yaran-greeter/theme.conf` |
+| SDDM selection | `etc/sddm.conf.d/yaran.conf` (`Current=yaran-greeter`) |
 | Session color scheme | `etc/xdg/kdeglobals` |
 
 The SDDM greeter is installed by `hooks/desktop/plasma-assets.sh`; the

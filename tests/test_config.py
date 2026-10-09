@@ -105,7 +105,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_all_manifests_validate(self):
         repo = Path(__file__).resolve().parents[1]
-        for path in [*repo.glob('PersisOS*.json'), *repo.glob('examples/*.json')]:
+        for path in [*repo.glob('Yaran*.json'), *repo.glob('examples/*.json')]:
             with self.subTest(path=path.name):
                 load_config(str(path))
 

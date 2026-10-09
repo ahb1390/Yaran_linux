@@ -1,0 +1,30 @@
+---
+componentName: Yaran
+
+strings:
+    productName:         "Yaran Linux"
+    productVersion:      "2.0"
+    productUrl:          "https://github.com/ahb1390/Yaran_linux"
+    supportUrl:          "https://github.com/ahb1390/Yaran_linux/issues"
+    knownIssuesUrl:      "https://github.com/ahb1390/Yaran_linux/issues"
+    releaseNotesUrl:     "https://github.com/ahb1390/Yaran_linux/releases"
+
+images:
+    productLogo:         "logo.svg"
+    productIcon:         "logo.svg"
+    productWelcome:      "welcome.svg"
+
+slideshow:               "slideshow.qml"
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: false
+windowSize: 960px,600px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+
+style:
+    SidebarBackground: "#201b29"
+    SidebarText: "#e5deed"
+    SidebarTextCurrent: "#ffffff"
+    SidebarBackgroundCurrent: "#9738ba"
