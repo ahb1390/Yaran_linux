@@ -21,7 +21,7 @@
   "timezone": "UTC",
   "root_password": null,
   "live_username": "admin",
-  "live_user_password": "yaranlinx",
+  "live_user_password": "yaranlinux",
   "packages": [
     "firmware-linux",
     "firmware-linux-free",
