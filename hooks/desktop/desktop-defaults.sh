@@ -18,10 +18,10 @@ mkdir -p /etc/sddm.conf.d /etc/skel/Desktop
 cp -a /.temp_assets/yaran-plasma-theme/etc/sddm.conf.d/. /etc/sddm.conf.d/
 cp -a /.temp_assets/yaran-plasma-theme/etc/skel/Desktop/. /etc/skel/Desktop/
 chmod 0755 /etc/skel/Desktop/*.desktop
-live_home=$(getent passwd user | cut -d: -f6)
+live_home=$(getent passwd admin | cut -d: -f6)
 if [ -n "$live_home" ]; then
-    install -d -m 0755 -o user -g user "$live_home/Desktop"
+    install -d -m 0755 -o admin -g admin "$live_home/Desktop"
     cp -a /etc/skel/Desktop/. "$live_home/Desktop/"
-    install -m 0755 -o user -g user /.temp_assets/yaran-plasma-theme/usr/share/applications/install-yaran.desktop "$live_home/Desktop/Install Yaran Linux.desktop"
-    chown -R user:user "$live_home/Desktop"
+    install -m 0755 -o admin -g admin /.temp_assets/yaran-plasma-theme/usr/share/applications/install-yaran.desktop "$live_home/Desktop/Install Yaran Linux.desktop"
+    chown -R admin:admin "$live_home/Desktop"
 fi

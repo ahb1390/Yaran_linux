@@ -20,8 +20,8 @@
   "locale": "en_US.UTF-8",
   "timezone": "UTC",
   "root_password": null,
-  "live_username": "user",
-  "live_user_password": "user",
+  "live_username": "admin",
+  "live_user_password": "yaranlinx",
   "packages": [
     "firmware-linux",
     "firmware-linux-free",
@@ -204,6 +204,6 @@
     ]
   },
   "grub_menu": {
-    "background": "assets/wallpapers/Lake/contents/images/2560x1600.png"
+    "background": "assets/wallpapers/Yaran Emblem/contents/images/1585x992.png"
   }
 }

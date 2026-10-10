@@ -5,20 +5,25 @@ LookAndFeelPackage=org.yaranlinux.desktop
 Theme=breeze
 
 [Colors:Selection]
-BackgroundNormal=#9738ba
-ForegroundNormal=#ffffff
+BackgroundNormal=#087F4F
+ForegroundNormal=#E7F5EC
 
 [Colors:Button]
-BackgroundNormal=#241e2b
-ForegroundNormal=#f4eff8
+BackgroundNormal=#0E241C
+ForegroundNormal=#E7F5EC
 
 [Colors:Window]
-BackgroundNormal=#1b171f
-ForegroundNormal=#f4eff8
+BackgroundNormal=#07110F
+ForegroundNormal=#E7F5EC
+
+[Colors:View]
+BackgroundNormal=#0A1713
+ForegroundNormal=#E7F5EC
 
 [General]
 widgetStyle=breeze
-colorScheme=BreezeDark
+colorScheme=Yaran Emerald
+AccentColor=#087F4F
 shadingFraction=0.5
 font=Noto Sans,10,-1,5,400,0,0,0,0,0
 fixed=Noto Sans Mono,10,-1,5,400,0,0,0,0,0
@@ -28,13 +33,13 @@ menuFont=Noto Sans,10,-1,5,400,0,0,0,0,0
 windowFont=Noto Sans,10,-1,5,400,0,0,0,0,0
 
 [WM]
-activeBlend=#9738ba
-activeBackground=#1b171f
-activeForeground=#ffffff
-inactiveBlend=#767676
-inactiveBackground=#241e2b
-inactiveForeground=#cfcfcf
-frame=#1b171f
+activeBlend=#087F4F
+activeBackground=#0B2E22
+activeForeground=#E7F5EC
+inactiveBlend=#1E4436
+inactiveBackground=#0A1914
+inactiveForeground=#9DBFAC
+frame=#0B2E22
 titlebarGradient=true
 
 [Desktop Entry]

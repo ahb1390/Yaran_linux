@@ -3,32 +3,37 @@
 This document describes the visual identity of Yaran Linux and where each part
 of it lives, so future changes stay coherent.
 
-## Design language: "violet night"
+## Design language: "emerald terminal"
 
-One quiet idea: **a dark screen with a single purple glow.** Every themed
-surface (boot splash, login, session accents) uses the same palette, the same
-typography rules, and restrained motion. Nothing bounces, nothing blinks
-fast, nothing competes with the logo.
+One quiet idea: **a very dark green screen with a single emerald glow.** Every
+themed surface (boot splash, login, session accents, installer) uses the same
+palette, the same typography rules, and restrained motion. Nothing bounces,
+nothing blinks fast, nothing competes with the logo. Neon green appears only as
+a small accent — focus rings, progress lines, the logo mark — never as a large
+filled surface.
 
-The logo itself (`yaran.svg`) is never restyled or recolored; all themes
-render it as-is.
+The logo itself (`yaran.svg`) keeps a single shared identity: a dark forest
+tile with a geometric emerald `Y`. The same artwork is used by the standalone
+logo, the Calamares installer branding, and the Plasma application icon.
 
 ## Palette
 
 | Token | Hex | Used for |
 |---|---|---|
-| `bg` | `#141317` | Splash and greeter background |
-| `surface` | `#1b171f` | Greeter card, window surfaces, splash |
-| `field` | `#241e2b` | Input fields and buttons |
-| `field-border` | `#3a3142` | Unfocused field border |
-| `brand` | `#9738ba` | Logo color, selection highlight, titlebar blend |
-| `glow` | `#b25ae8` | Focus ring, progress line, hover accents |
-| `ink` | `#f4eff8` | Primary text |
-| `muted` | `#c2bbcc` | Secondary labels and hints |
+| `bg` | `#07110F` | Splash and greeter background, window background |
+| `surface` | `#0B2E22` | Titlebar, sidebar, elevated surfaces |
+| `card` | `#0A1914` | Greeter login card |
+| `field` | `#0E241C` | Input fields and buttons |
+| `field-border` | `#1E4436` | Unfocused field border |
+| `brand` | `#087F4F` | Selection highlight, titlebar blend, accent color |
+| `glow` | `#20D878` | Logo mark, focus ring, progress line, hover accents |
+| `ink` | `#E7F5EC` | Primary text |
+| `muted` | `#9DBFAC` | Secondary labels and hints |
 
-Rules of thumb: purple is the only saturated color on themed screens; white
-appears only as low-opacity structure (dividers, track lines); never use a
-second hue.
+Rules of thumb: emerald is the only saturated color on themed screens;
+`#39FF88` (neon green) is reserved for rare, tiny accents and is not part of
+the daily UI; white appears only as low-opacity structure (dividers, track
+lines); never introduce a second hue.
 
 ## Typography
 
@@ -56,6 +61,12 @@ All paths are relative to `assets/yaran-plasma-theme/`.
 | SDDM wallpaper | `usr/share/sddm/themes/yaran-greeter/theme.conf` |
 | SDDM selection | `etc/sddm.conf.d/yaran.conf` (`Current=yaran-greeter`) |
 | Session color scheme | `etc/xdg/kdeglobals` |
+| Full color scheme | `usr/share/color-schemes/yaran-emerald.colors` |
+| Default wallpaper | `../../wallpapers/Yaran Emblem/` (installed to `/usr/share/wallpapers/`) |
+
+The default wallpaper package is referenced from three places that must stay in
+sync: the look-and-feel `contents/defaults` (`[Wallpaper] Image=`), the layout
+template's `contents/layout.js`, and the SDDM `theme.conf`.
 
 The SDDM greeter is installed by `hooks/desktop/plasma-assets.sh`; the
 `etc/` defaults by `hooks/desktop/desktop-defaults.sh`. If you add files

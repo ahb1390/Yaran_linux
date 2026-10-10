@@ -76,7 +76,7 @@ sudo python3 build.py Yaran-Server-2.0-amd64.json \
 Fastfetch is installed in the desktop and server images. It runs when an
 interactive Bash terminal opens and displays the Yaran Linux logo.
 
-The server live account is `admin` with password `persisos`. The text-interface
+The server live account is `admin` with password `yaranlinx`. The text-interface
 installer starts automatically on the first console when booting live media;
 it lists unused disks with capacity and model, asks for an installed hostname,
 time zone, and new admin password, and requires explicit confirmation before

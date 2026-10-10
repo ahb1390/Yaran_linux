@@ -6,9 +6,9 @@ Item {
     width: 1600
     height: 900
 
-    readonly property color ink: "#f4eff8"
-    readonly property color muted: "#c2bbcc"
-    readonly property color accent: "#b25ae8"
+    readonly property color ink: "#E7F5EC"
+    readonly property color muted: "#9DBFAC"
+    readonly property color accent: "#20D878"
     property string message: ""
     property real welcomeIntroOffset: 24
 
@@ -22,15 +22,15 @@ Item {
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#14131730" }
-            GradientStop { position: 0.48; color: "#14131788" }
-            GradientStop { position: 1.0; color: "#141317e8" }
+            GradientStop { position: 0.0; color: "#07110F30" }
+            GradientStop { position: 0.48; color: "#07110F88" }
+            GradientStop { position: 1.0; color: "#07110FE8" }
         }
     }
 
     Rectangle {
         anchors.fill: parent
-        color: "#141317"
+        color: "#07110F"
         opacity: 0.16
     }
 
@@ -100,7 +100,7 @@ Item {
         anchors.rightMargin: Math.max(48, root.width * 0.12)
         anchors.verticalCenter: parent.verticalCenter
         radius: 22
-        color: "#1b171f"
+        color: "#0A1914"
         border.width: 1
         border.color: "#ffffff20"
         opacity: 0
@@ -139,8 +139,8 @@ Item {
                 leftPadding: 14
                 background: Rectangle {
                     radius: 10
-                    color: "#241e2b"
-                    border.color: username.activeFocus ? root.accent : "#3a3142"
+                    color: "#0E241C"
+                    border.color: username.activeFocus ? root.accent : "#1E4436"
                 }
                 onAccepted: password.forceActiveFocus()
             }
@@ -157,8 +157,8 @@ Item {
                 leftPadding: 14
                 background: Rectangle {
                     radius: 10
-                    color: "#241e2b"
-                    border.color: password.activeFocus ? root.accent : "#3a3142"
+                    color: "#0E241C"
+                    border.color: password.activeFocus ? root.accent : "#1E4436"
                 }
                 onAccepted: root.login()
             }
@@ -182,8 +182,8 @@ Item {
                 }
                 background: Rectangle {
                     radius: 10
-                    color: "#241e2b"
-                    border.color: session.activeFocus ? root.accent : "#3a3142"
+                    color: "#0E241C"
+                    border.color: session.activeFocus ? root.accent : "#1E4436"
                 }
             }
 
@@ -206,14 +206,14 @@ Item {
                 font.weight: Font.DemiBold
                 contentItem: Text {
                     text: parent.text
-                    color: "#ffffff"
+                    color: "#07110F"
                     font: parent.font
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
                 background: Rectangle {
                     radius: 10
-                    color: parent.down ? "#9738ba" : root.accent
+                    color: parent.down ? "#087F4F" : root.accent
                     Behavior on color { ColorAnimation { duration: 140 } }
                 }
                 onClicked: root.login()
@@ -230,7 +230,7 @@ Item {
                     background: Rectangle { color: "transparent" }
                     contentItem: Text {
                         text: parent.text
-                        color: parent.enabled ? root.muted : "#77717e"
+                        color: parent.enabled ? root.muted : "#5F7A6C"
                         font.family: "Noto Sans"
                         font.pixelSize: 12
                     }
@@ -242,7 +242,7 @@ Item {
                     background: Rectangle { color: "transparent" }
                     contentItem: Text {
                         text: parent.text
-                        color: parent.enabled ? root.muted : "#77717e"
+                        color: parent.enabled ? root.muted : "#5F7A6C"
                         font.family: "Noto Sans"
                         font.pixelSize: 12
                     }

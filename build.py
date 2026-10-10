@@ -332,7 +332,7 @@ def load_config(path: str) -> dict:
                 raise BuildError(f"Script does not exist: {script}")
     if "grub_background" in cfg:
         bg = cfg["grub_background"]
-        if not isinstance(bg, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9_.\-/]*", bg) or ".." in Path(bg).parts:
+        if not isinstance(bg, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9 _.\-/]*", bg) or ".." in Path(bg).parts:
             raise BuildError("grub_background must be a relative path to an image")
         bg_path = config_path.parent / bg
         if not bg_path.is_file() or bg_path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tga"):
@@ -368,7 +368,7 @@ def load_config(path: str) -> dict:
             raise BuildError("grub_menu.default must select one of the three generated entries")
         background = menu.get("background")
         if background is not None:
-            if not isinstance(background, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9_.\-/]*", background) or ".." in Path(background).parts:
+            if not isinstance(background, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9 _.\-/]*", background) or ".." in Path(background).parts:
                 raise BuildError("grub_menu.background must be a relative path to an image")
             bg_path = config_path.parent / background
             if not bg_path.is_file() or bg_path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tga"):

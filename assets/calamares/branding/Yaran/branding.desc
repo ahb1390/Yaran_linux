@@ -24,7 +24,7 @@ sidebar: widget
 navigation: widget
 
 style:
-    SidebarBackground: "#201b29"
-    SidebarText: "#e5deed"
+    SidebarBackground: "#0B2E22"
+    SidebarText: "#E7F5EC"
     SidebarTextCurrent: "#ffffff"
-    SidebarBackgroundCurrent: "#9738ba"
+    SidebarBackgroundCurrent: "#087F4F"

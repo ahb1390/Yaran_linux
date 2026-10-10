@@ -21,7 +21,7 @@
   "timezone": "UTC",
   "root_password": null,
   "live_username": "admin",
-  "live_user_password": "persisos",
+  "live_user_password": "yaranlinx",
   "packages": [
     "firmware-linux",
     "firmware-linux-free",
@@ -165,6 +165,6 @@
     ]
   },
   "grub_menu": {
-    "background": "assets/wallpapers/Lake/contents/images/2560x1600.png"
+    "background": "assets/wallpapers/Yaran Emblem/contents/images/1585x992.png"
   }
 }

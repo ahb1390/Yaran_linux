@@ -2,27 +2,27 @@
 set -Eeuo pipefail
 
 # newt (used by whiptail) reads this palette for every dialog. Use the
-# 256-color palette so the background is visibly purple on a local console.
-export NEWT_COLORS='root=white,magenta
-window=white,magenta
-border=white,magenta
-title=white,magenta
-textbox=white,magenta
-button=magenta,white
-compactbutton=magenta,white
-listbox=white,magenta
-actlistbox=white,blue
-actsellistbox=white,blue
-label=white,magenta
-checkbox=white,magenta
-actcheckbox=magenta,white
-entry=white,blue
-disentry=gray,magenta
-helpline=white,magenta
-roottext=white,magenta
-emptyscale=white,magenta
-fullscale=white,blue
- منف=white,magenta'
+# 256-color palette so the background is visibly green on a local console.
+export NEWT_COLORS='root=white,green
+window=white,green
+border=white,green
+title=white,green
+textbox=white,green
+button=green,white
+compactbutton=green,white
+listbox=white,green
+actlistbox=white,black
+actsellistbox=white,black
+label=white,green
+checkbox=white,green
+actcheckbox=green,white
+entry=white,black
+disentry=gray,green
+helpline=white,green
+roottext=white,green
+emptyscale=white,green
+fullscale=green,white
+ منف=white,green'
 
 TARGET=/mnt/yaran-install
 LOG=$(mktemp /tmp/yaran-installer.XXXXXX)

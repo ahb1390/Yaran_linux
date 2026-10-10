@@ -1,7 +1,7 @@
 // Yaran Linux default desktop layout
 
 var wallpaper =
-    'file:///usr/share/wallpapers/Lake/contents/images/2560x1600.png'
+    'file:///usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png'
 var allDesktops = desktopsForActivity(currentActivity())
 for (var i = 0; i < allDesktops.length; i++) {
   var desktop = allDesktops[i]

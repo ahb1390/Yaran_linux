@@ -1,32 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#21172f"/>
-      <stop offset="1" stop-color="#111923"/>
+      <stop offset="0" stop-color="#0B2E22"/>
+      <stop offset="1" stop-color="#07110F"/>
     </linearGradient>
-    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#d09aef"/>
-      <stop offset="1" stop-color="#8247bd"/>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B2E22"/>
+      <stop offset="1" stop-color="#07110F"/>
+    </linearGradient>
+    <linearGradient id="emerald" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#20D878"/>
+      <stop offset="1" stop-color="#087F4F"/>
     </linearGradient>
     <radialGradient id="glow">
-      <stop offset="0" stop-color="#a84fd0" stop-opacity=".32"/>
-      <stop offset="1" stop-color="#a84fd0" stop-opacity="0"/>
+      <stop offset="0" stop-color="#20D878" stop-opacity=".26"/>
+      <stop offset="1" stop-color="#20D878" stop-opacity="0"/>
     </radialGradient>
+    <filter id="softglow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
   </defs>
   <rect width="920" height="520" rx="30" fill="url(#bg)"/>
-  <circle cx="690" cy="210" r="260" fill="url(#glow)"/>
-  <path d="M0 410c170-68 267 34 420-26s299-124 500-61v197H0z" fill="#30213f" opacity=".72"/>
-  <path d="M0 455c176-50 287 40 466-14s305-77 454-45v124H0z" fill="#1b2933" opacity=".9"/>
+  <circle cx="690" cy="210" r="270" fill="url(#glow)"/>
+  <path d="M0 410c170-68 267 34 420-26s299-124 500-61v197H0z" fill="#0B2E22" opacity=".78"/>
+  <path d="M0 455c176-50 287 40 466-14s305-77 454-45v124H0z" fill="#07110F" opacity=".92"/>
   <g transform="translate(690 210) scale(0.44) translate(-256 -256)">
-    <rect x="56" y="56" width="400" height="400" rx="80" fill="#9738ba"/>
-    <path d="M140 132 L256 260 L372 132 M256 260 V380"
-          fill="none" stroke="#ffffff" stroke-width="62"
-          stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="36" y="36" width="440" height="440" rx="104" fill="url(#tile)"/>
+    <rect x="37.5" y="37.5" width="437" height="437" rx="102.5" fill="none"
+          stroke="#087F4F" stroke-opacity="0.45" stroke-width="3"/>
+    <path d="M96 88h62l98 136 98-136h62L284 270v154h-56V270z"
+          fill="#20D878" opacity="0.4" filter="url(#softglow)"/>
+    <path d="M96 88h62l98 136 98-136h62L284 270v154h-56V270z"
+          fill="url(#emerald)"/>
   </g>
-  <text x="76" y="170" fill="#d7c8e3" font-family="Noto Sans, sans-serif" font-size="18" letter-spacing="3">WELCOME TO</text>
-  <text x="72" y="236" fill="#fff" font-family="Noto Sans, sans-serif" font-size="54" font-weight="700">Yaran Linux</text>
-  <rect x="78" y="265" width="60" height="4" rx="2" fill="#c07de0"/>
-  <text x="76" y="313" fill="#ded8e5" font-family="Noto Sans, sans-serif" font-size="20">A thoughtful Linux desktop,</text>
-  <text x="76" y="343" fill="#ded8e5" font-family="Noto Sans, sans-serif" font-size="20">built for work and everyday life.</text>
-  <text x="76" y="405" fill="#a99eb5" font-family="Noto Sans, sans-serif" font-size="13" letter-spacing="1">DEBIAN GNU/LINUX · VERSION 2.0</text>
+  <text x="76" y="170" fill="#9DBFAC" font-family="Noto Sans, sans-serif" font-size="18" letter-spacing="3">WELCOME TO</text>
+  <text x="72" y="236" fill="#E7F5EC" font-family="Noto Sans, sans-serif" font-size="54" font-weight="700">Yaran Linux</text>
+  <rect x="78" y="265" width="60" height="4" rx="2" fill="#20D878"/>
+  <text x="76" y="313" fill="#CDE7D8" font-family="Noto Sans, sans-serif" font-size="20">A focused Linux desktop,</text>
+  <text x="76" y="343" fill="#CDE7D8" font-family="Noto Sans, sans-serif" font-size="20">built for work and everyday life.</text>
+  <text x="76" y="405" fill="#6F8F7E" font-family="Noto Sans, sans-serif" font-size="13" letter-spacing="1">DEBIAN GNU/LINUX · VERSION 2.0</text>
 </svg>

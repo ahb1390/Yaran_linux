@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" version="1.2" viewBox="0 0 512 512" width="512" height="512">
   <title>Yaran Linux</title>
-  <path d="M140 132 L256 260 L372 132 M256 260 V380"
-        fill="none" stroke="#ffffff" stroke-width="62"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="emerald" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#20D878"/>
+      <stop offset="1" stop-color="#087F4F"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <path d="M96 88h62l98 136 98-136h62L284 270v154h-56V270z"
+        fill="#20D878" opacity="0.35" filter="url(#glow)"/>
+  <path d="M96 88h62l98 136 98-136h62L284 270v154h-56V270z"
+        fill="url(#emerald)" stroke="#07110F" stroke-opacity="0.5"
+        stroke-width="8" stroke-linejoin="miter"/>
 </svg>
