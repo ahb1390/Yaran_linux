@@ -4,8 +4,8 @@
     "type": "file",
     "source": "/usr/share/fastfetch/yaran.txt",
     "color": {
-      "1": "#20D878",
-      "2": "#E7F5EC"
+      "1": "38;2;32;216;120",
+      "2": "38;2;231;245;236"
     },
     "padding": {
       "right": 2
