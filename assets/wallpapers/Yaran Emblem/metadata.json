@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux"
+            }
+        ],
+        "Id": "Yaran Emblem",
+        "License": "MIT",
+        "Name": "Yaran Emblem",
+        "Description": "The neon Yaran Linux emblem in misty green mountains"
+    },
+    "X-Yaran-Source": "نشان نئونی یاران لینوکس در مهستان.png",
+    "X-Yaran-Default": true
+}

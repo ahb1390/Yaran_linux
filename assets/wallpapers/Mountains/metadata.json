@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux"
+            }
+        ],
+        "Id": "Mountains",
+        "License": "MIT",
+        "Name": "Mountains"
+    }
+}

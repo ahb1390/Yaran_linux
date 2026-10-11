@@ -1,0 +1,15 @@
+{
+    "KPackageStructure": "Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux"
+            }
+        ],
+        "Id": "Yaran Glow",
+        "License": "MIT",
+        "Name": "Yaran Glow",
+        "Description": "A cinematic green-lit landscape for Yaran Linux"
+    },
+    "X-Yaran-Source": "والپیپر سینمایی یاران لینوکس با نور سبز.png"
+}

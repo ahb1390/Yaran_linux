@@ -1,0 +1,80 @@
+name: Build & Validate Yaran Linux
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Yaran-2.0-*.json'
+      - 'Yaran-Server-2.0-*.json'
+      - 'build.py'
+      - 'hooks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'examples/**'
+      - 'assets/**'
+      - 'yaran.svg'
+      - 'README.md'
+      - 'docs/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Yaran-2.0-*.json'
+      - 'Yaran-Server-2.0-*.json'
+      - 'build.py'
+      - 'hooks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'examples/**'
+      - 'assets/**'
+      - 'yaran.svg'
+      - 'README.md'
+      - 'docs/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unit tests and manifests
+        run: |
+          python3 -m unittest discover -s tests -v
+          for config in Yaran*.json examples/*.json; do
+            python3 build.py "$config" --validate
+          done
+          find hooks scripts -name '*.sh' -exec bash -n {} \;
+
+  build-desktop:
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - config: Yaran-2.0-amd64-minimal.json
+            runner: ubuntu-latest
+            artifact: yaran-amd64-minimal
+          - config: Yaran-2.0-amd64-extended.json
+            runner: ubuntu-latest
+            artifact: yaran-amd64-extended
+          - config: Yaran-2.0-arm64.json
+            runner: ubuntu-24.04-arm
+            artifact: yaran-arm64
+    uses: ./.github/workflows/image.yml
+    with:
+      config: ${{ matrix.config }}
+      runner: ${{ matrix.runner }}
+      artifact: ${{ matrix.artifact }}
+
+  build-server:
+    needs: validate
+    uses: ./.github/workflows/image.yml
+    with:
+      config: Yaran-Server-2.0-amd64.json
+      runner: ubuntu-latest
+      artifact: yaran-server-amd64

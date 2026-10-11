@@ -1,0 +1,9 @@
+[SDDM Theme]
+Name=Yaran Linux
+Description=Yaran Linux sign-in with a welcoming, accessible login panel
+Author=Yaran Linux
+License=GPL-2.0+
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf

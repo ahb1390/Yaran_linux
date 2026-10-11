@@ -1,0 +1,15 @@
+{
+    "KPackageStructure": "Wallpaper",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Yaran Linux"
+            }
+        ],
+        "Id": "Yaran Horizon",
+        "License": "MIT",
+        "Name": "Yaran Horizon",
+        "Description": "A cinematic Yaran Linux landscape in deep emerald tones"
+    },
+    "X-Yaran-Source": "والپیپر سینمایی یاران لینوکس.png"
+}
