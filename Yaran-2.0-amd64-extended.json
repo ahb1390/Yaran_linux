@@ -48,6 +48,8 @@
     "kwin-x11",
     "kwin-wayland",
     "plasma-workspace",
+    "xdg-desktop-portal",
+    "xdg-desktop-portal-kde",
     "network-manager",
     "wpasupplicant",
     "bluez",
@@ -88,7 +90,11 @@
     "ca-certificates",
     "systemd-timesyncd",
     "fonts-vazirmatn",
+    "fonts-vazirmatn-variable",
     "fonts-noto-core",
+    "fonts-noto-cjk",
+    "fonts-noto-cjk-extra",
+    "fonts-hosny-amiri",
     "fonts-noto-color-emoji",
     "fonts-freefont-ttf",
     "hunspell-en-us",
@@ -195,10 +201,13 @@
     "hooks/desktop/flatpak.sh",
     "hooks/common/install-fastfetch.sh",
     "hooks/common/install-calamares.sh",
+    "hooks/desktop/grub-theme.sh",
+    "hooks/desktop/plymouth-theme.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/desktop/install-external-apps.sh",
     "hooks/desktop/install-extended-apps.sh",
-    "hooks/common/cleanup-assets.sh"
+    "hooks/common/cleanup-assets.sh",
+    "hooks/common/verify-image.sh"
   ],
   "boot_append": "quiet splash",
   "squashfs_compression": "xz",
@@ -227,9 +236,13 @@
       "fstrim.timer",
       "fwupd-refresh.timer",
       "apparmor",
-      "unattended-upgrades",
       "nftables",
       "cups"
+    ],
+    "disable": [
+      "apt-daily.timer",
+      "apt-daily-upgrade.timer",
+      "unattended-upgrades.service"
     ]
   },
   "grub_menu": {
