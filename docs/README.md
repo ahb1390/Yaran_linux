@@ -10,6 +10,7 @@ guide:
 | Building live images | [builder.md](builder.md) | [builder.fa.md](builder.fa.md) |
 | Build architecture | [architecture.md](architecture.md) | [architecture.fa.md](architecture.fa.md) |
 | Manifest reference | [manifest.md](manifest.md) | [manifest.fa.md](manifest.fa.md) |
+| Bash experience | [bash-experience.md](bash-experience.md) | [bash-experience.fa.md](bash-experience.fa.md) |
 | Troubleshooting | [troubleshooting.md](troubleshooting.md) | [troubleshooting.fa.md](troubleshooting.fa.md) |
 | Releases and artifacts | [releases.md](releases.md) | [releases.fa.md](releases.fa.md) |
 | Theme guide | [theme.md](theme.md) | [theme.fa.md](theme.fa.md) |

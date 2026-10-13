@@ -85,6 +85,7 @@
     "plasma-discover-backend-flatpak",
     "flatpak",
     "ca-certificates",
+    "bash-completion",
     "systemd-timesyncd",
     "fonts-vazirmatn",
     "fonts-noto-core",
@@ -171,6 +172,8 @@
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/flatpak.sh",
     "hooks/common/install-fastfetch.sh",
+    "hooks/common/install-ble.sh",
+    "hooks/common/bash-experience.sh",
     "hooks/common/install-calamares.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/common/cleanup-assets.sh"

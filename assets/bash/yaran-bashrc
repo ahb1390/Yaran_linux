@@ -1,0 +1,119 @@
+# Yaran Linux — interactive Bash experience
+#
+# Installed to /usr/share/yaran/bash/yaran-bashrc by
+# hooks/common/bash-experience.sh and sourced from /etc/bash.bashrc, which
+# Debian's bash reads for every interactive shell (login and non-login).
+# That reaches the live session, newly created users and existing users
+# without touching anyone's personal ~/.bashrc, which is still read
+# afterwards and can override anything here.
+#
+# Design rules:
+#   * interactive shells only — scripts and non-interactive shells are
+#     untouched;
+#   * every external file is optional and guarded, so a missing git, missing
+#     ble.sh or a broken feature never breaks the shell;
+#   * idempotent: sourcing twice changes nothing.
+
+# --- Guard: interactive only, load once ------------------------------------
+case $- in
+    *i*) ;;
+    *) return 0 2>/dev/null || exit 0 ;;
+esac
+[ -n "${YARAN_BASHRC_LOADED:-}" ] && return 0
+YARAN_BASHRC_LOADED=1
+
+# --- History ---------------------------------------------------------------
+# Large, merged, append-only history. "ignoreboth" skips blank-prefixed and
+# duplicate commands; typing ` sudo ...` with a leading space keeps a
+# password argument out of the history file.
+export HISTCONTROL=ignoreboth:erasedups
+export HISTSIZE=100000
+export HISTFILESIZE=200000
+export HISTTIMEFORMAT='%F %T '
+shopt -s histappend
+shopt -s checkwinsize
+
+_yaran_history_sync() {
+    history -a
+    history -n
+}
+
+# --- Colors ----------------------------------------------------------------
+# Yaran green/teal identity, kept readable. Color selection for the prompt
+# happens in the prompt section below; tool output colors are handled by
+# aliases and man(1) terminal capabilities here.
+# Colored tool output (GNU coreutils/diffutils all support --color=auto).
+alias l='ls -CF --color=auto'
+alias la='ls -A --color=auto'
+alias ll='ls -alF --color=auto'
+alias grep='grep --color=auto'
+alias diff='diff --color=auto'
+
+# man(1): soft green headings/emphasis via less terminal capabilities.
+export LESS_TERMCAP_md=$'\033[1;32m'
+export LESS_TERMCAP_me=$'\033[0m'
+export LESS_TERMCAP_us=$'\033[1;36m'
+export LESS_TERMCAP_ue=$'\033[0m'
+export LESS_TERMCAP_so=$'\033[7;30;47m'
+export LESS_TERMCAP_se=$'\033[0m'
+
+# --- Prompt: user@host, path, git branch + status, exit code ---------------
+# Git metadata comes from Debian's own git-prompt helper (ships with the
+# git package): branch name, *, +, $, % and upstream ahead/behind. When git
+# is not installed the prompt simply omits the branch part.
+#
+# Note on color handling: bash decodes \[ \] and \033 in the literal PS1
+# string only — sequences that arrive through ${variable} expansion are
+# printed literally and also break readline's width calculation. We
+# therefore keep the raw escape sequences (as plain characters) in shell
+# variables and assemble the final PS1 inside PROMPT_COMMAND, where it is
+# re-created as a literal string before every prompt.
+if [ -r /usr/lib/git-core/git-sh-prompt ]; then
+    GIT_PS1_SHOWDIRTYSTATE=1
+    GIT_PS1_SHOWSTASHSTATE=1
+    GIT_PS1_SHOWUNTRACKEDFILES=1
+    GIT_PS1_SHOWUPSTREAM="auto"
+    . /usr/lib/git-core/git-sh-prompt
+fi
+
+if [ "$(tput colors 2>/dev/null || echo 0)" -ge 256 ]; then
+    _YARAN_C_USER='\[\033[38;5;119m\]'
+    _YARAN_C_PATH='\[\033[38;5;79m\]'
+    _YARAN_C_GIT='\[\033[38;5;78m\]'
+    _YARAN_C_ERR='\[\033[38;5;204m\]'
+elif [ "$(tput colors 2>/dev/null || echo 0)" -ge 8 ]; then
+    _YARAN_C_USER='\[\033[1;32m\]'
+    _YARAN_C_PATH='\[\033[0;36m\]'
+    _YARAN_C_GIT='\[\033[0;32m\]'
+    _YARAN_C_ERR='\[\033[0;31m\]'
+else
+    _YARAN_C_USER='' _YARAN_C_PATH='' _YARAN_C_GIT='' _YARAN_C_ERR=''
+fi
+_YARAN_C_RESET='\[\033[0m\]'
+
+_yaran_prompt_update() {
+    local status=$?
+    _yaran_history_sync
+    local err='' gitpart=''
+    if [ "$status" -ne 0 ]; then
+        err="${_YARAN_C_ERR}[${status}]${_YARAN_C_RESET}"
+    fi
+    if declare -F __git_ps1 >/dev/null 2>&1; then
+        gitpart="$(__git_ps1 ' (%s)')"
+    fi
+    PS1="${err}${_YARAN_C_USER}\u@\h${_YARAN_C_RESET} ${_YARAN_C_PATH}\w${_YARAN_C_RESET}${_YARAN_C_GIT}${gitpart}${_YARAN_C_RESET}\$ "
+}
+PROMPT_COMMAND=_yaran_prompt_update
+
+# --- ble.sh: menu completion, suggestions, syntax highlighting -------------
+# Pinned system copy installed by hooks/common/install-ble.sh (BSD-3-Clause,
+# verified SHA-256). Defaults are used deliberately: Tab is menu-complete
+# with arrow-key navigation, auto-complete shows history-based suggestions
+# inline (accepted with Enter only — never executed automatically).
+# If ble.sh is absent or fails to load, everything above still works.
+if [[ ${BASH_VERSINFO[0]} -ge 4 ]] && [[ -r "${YARAN_BLE_SH:-/usr/share/ble.sh/ble.sh}" ]]; then
+    source "${YARAN_BLE_SH:-/usr/share/ble.sh/ble.sh}" --noattach
+fi
+if [[ ${BLE_VERSION-} ]]; then
+    ble-attach
+fi

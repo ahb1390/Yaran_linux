@@ -128,6 +128,7 @@
     "hooks/server/login-branding.sh",
     "hooks/server/install-cli-installer.sh",
     "hooks/common/install-fastfetch.sh",
+    "hooks/common/bash-experience.sh",
     "hooks/common/cleanup-assets.sh"
   ],
   "boot_append": "quiet noautologin",
