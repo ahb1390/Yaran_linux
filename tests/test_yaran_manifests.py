@@ -33,15 +33,47 @@ REQUIRED_PACKAGES = {
     'pipewire',
     'pipewire-audio',
     'wireplumber',
+    # Sound control (volume keys, applet, pavucontrol path).
+    'plasma-pa',
+    # Laptop power management: powerdevil drives brightness keys, the
+    # battery applet, lid-close and suspend policies.
+    'powerdevil',
+    'upower',
+    'power-profiles-daemon',
+    # KDE shell tools.
+    'bluedevil',
+    'plasma-nm',
+    'kinfocenter',
+    # Firmware updates through Discover/fwupd.
+    'fwupd',
+    'plasma-discover-backend-fwupd',
     # Font coverage.
     'fonts-vazirmatn',
     'fonts-vazirmatn-variable',
     'fonts-noto-core',
     'fonts-noto-cjk',
+    'fonts-noto-mono',
+    'fonts-noto-ui-core',
     'fonts-noto-color-emoji',
+    # Firmware for common laptop hardware.
+    'firmware-misc-nonfree',
+    'bluez-firmware',
     # Boot branding.
     'plymouth',
 }
+
+# Applications that must never appear in a Yaran desktop image; TLP would
+# additionally fight power-profiles-daemon over power management.
+FORBIDDEN_PACKAGES = {
+    'nautilus', 'gnome-terminal', 'file-roller', 'evince', 'eog',
+    'totem', 'rhythmbox', 'tlp', 'tlp-rdw',
+    # Zenity was shipped but used by no Yaran script; it only pulled the
+    # GNOME toolkit (libadwaita + adwaita-icon-theme) into the image.
+    'zenity',
+}
+
+# Extra font families only the Extended image carries (large download).
+EXTENDED_FONT_PACKAGES = {'fonts-noto-cjk-extra', 'fonts-noto-ui-extra', 'fonts-noto-extra'}
 
 DISABLED_UNITS = {'apt-daily.timer', 'apt-daily-upgrade.timer', 'unattended-upgrades.service'}
 
@@ -67,6 +99,42 @@ class ManifestPolicyTests(unittest.TestCase):
                 packages = cfg['packages']
                 self.assertEqual(len(packages), len(set(packages)),
                                  f'{name} contains duplicate package names')
+
+    def test_no_unwanted_gnome_apps_or_conflicting_power_managers(self):
+        for name, cfg in self.configs.items():
+            with self.subTest(manifest=name):
+                packages = set(cfg['packages'])
+                present = FORBIDDEN_PACKAGES & packages
+                self.assertFalse(present, f'{name} ships unwanted packages: {sorted(present)}')
+                # Excluding them keeps future dependency changes from
+                # silently reintroducing them.
+                self.assertTrue(FORBIDDEN_PACKAGES <= set(cfg['exclude_packages']),
+                                f'{name} must exclude {sorted(FORBIDDEN_PACKAGES - set(cfg["exclude_packages"]))}')
+
+    def test_extended_ships_the_extra_font_families(self):
+        extended = self.configs['Yaran-2.0-amd64-extended.json']
+        missing = EXTENDED_FONT_PACKAGES - set(extended['packages'])
+        self.assertFalse(missing, f'extended is missing large font sets: {sorted(missing)}')
+
+    def test_dolphin_is_the_default_file_manager(self):
+        mimeapps = (ROOT / 'assets/yaran-plasma-theme/etc/xdg/mimeapps.list').read_text()
+        self.assertIn('inode/directory=org.kde.dolphin.desktop', mimeapps)
+        for name, cfg in self.configs.items():
+            with self.subTest(manifest=name):
+                self.assertIn('dolphin', cfg['packages'])
+                # Everything needed to open common file types in KDE apps.
+                for pkg in ('gwenview', 'okular', 'ark'):
+                    self.assertIn(pkg, cfg['packages'])
+
+    def test_verify_image_covers_script_and_power_policy(self):
+        hook = (ROOT / 'hooks/common/verify-image.sh').read_text()
+        self.assertIn('powerdevil', hook)
+        self.assertIn('nautilus', hook)
+        self.assertIn('inode/directory=org.kde.dolphin.desktop', hook)
+        # One fc-list probe per major script must exist.
+        for lang in ('fa', 'ar', 'he', 'hi', 'th', 'bo', 'hy', 'ka', 'am',
+                     'zh-cn', 'zh-tw', 'ja', 'ko'):
+            self.assertIn(f'{lang}|', hook)
 
     def test_apt_sources_are_signed_and_have_no_backports_by_default(self):
         for name, cfg in self.configs.items():

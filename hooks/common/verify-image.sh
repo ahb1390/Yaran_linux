@@ -86,16 +86,47 @@ fi
 
 # --- 4. Desktop: font coverage ---------------------------------------------
 if is_desktop; then
-    for pkg in fonts-vazirmatn fonts-vazirmatn-variable fonts-noto-cjk fonts-noto-color-emoji; do
+    for pkg in fonts-vazirmatn fonts-vazirmatn-variable fonts-noto-core \
+               fonts-noto-cjk fonts-noto-mono fonts-noto-ui-core \
+               fonts-noto-color-emoji; do
         dpkg -s "$pkg" >/dev/null 2>&1 || problem "missing font package: $pkg"
     done
     test -f /etc/fonts/conf.d/99-yaran-default-fonts.conf || \
         problem 'Yaran fontconfig defaults missing'
+    # Actual script coverage in fontconfig — a package being installed is not
+    # proof that text renders. Each line must resolve to at least one family.
+    while IFS='|' read -r lang family; do
+        [ -n "$lang" ] || continue
+        if ! fc-list ":lang=$lang" family 2>/dev/null | grep -q .; then
+            problem "no font registered for language '$lang' ($family)"
+        fi
+    done <<'EOF'
+fa|Persian (Vazirmatn)
+ar|Arabic (Noto)
+he|Hebrew (Noto)
+hi|Devanagari (Noto)
+bn|Bengali (Noto)
+ta|Tamil (Noto)
+th|Thai (Noto)
+lo|Lao (Noto)
+km|Khmer (Noto)
+my|Myanmar (Noto)
+bo|Tibetan (Noto Serif)
+hy|Armenian (Noto)
+ka|Georgian (Noto)
+am|Ethiopic (Noto)
+el|Greek (Noto)
+ru|Cyrillic (Noto)
+zh-cn|Chinese simplified (Noto CJK)
+zh-tw|Chinese traditional (Noto CJK)
+ja|Japanese (Noto CJK)
+ko|Korean (Noto CJK)
+EOF
     fc-list :lang=zh family 2>/dev/null | grep -q 'Noto Sans CJK' || \
         problem 'no CJK font registered in fontconfig'
     fc-list :lang=fa family 2>/dev/null | grep -q 'Vazirmatn' || \
         problem 'no Persian font registered in fontconfig'
-    [ "$fail" -eq 0 ] && ok 'fa/ar/cjk/emoji fonts installed and registered'
+    [ "$fail" -eq 0 ] && ok 'font script coverage verified (20 languages)'
 fi
 
 # --- 5. Desktop: skel and wallet policy ------------------------------------
@@ -104,6 +135,38 @@ if is_desktop; then
     grep -A2 '^\[Wallet\]' /etc/xdg/kdeglobals 2>/dev/null | grep -q 'Enabled=false' || \
         problem 'KWallet is not disabled in /etc/xdg/kdeglobals'
     [ "$fail" -eq 0 ] && ok 'skel Projects folder present; KWallet disabled'
+fi
+
+# --- 5b. Desktop: KDE shell, power stack and no GNOME apps -----------------
+# powerdevil is the KDE component behind brightness keys, the battery applet,
+# lid-close and suspend policies; without it Fn brightness keys are dead.
+# TLP must never share the machine with power-profiles-daemon.
+if is_desktop; then
+    for pkg in dolphin plasma-pa bluedevil plasma-nm powerdevil upower \
+               kinfocenter fwupd; do
+        dpkg -s "$pkg" >/dev/null 2>&1 || problem "missing KDE component: $pkg"
+    done
+    for pkg in nautilus gnome-terminal file-roller evince eog totem rhythmbox tlp zenity; do
+        if dpkg -s "$pkg" >/dev/null 2>&1; then
+            problem "unwanted package installed: $pkg"
+        fi
+    done
+    grep -A2 '^\[Default Applications\]' /etc/xdg/mimeapps.list 2>/dev/null \
+        | grep -qx 'inode/directory=org.kde.dolphin.desktop' || \
+        problem 'Dolphin is not the default file manager in /etc/xdg/mimeapps.list'
+    for app in dolphin kate konsole gwenview okular ark; do
+        ls /usr/share/applications/ 2>/dev/null | grep -qi "$app" || \
+            problem "menu entry missing for $app"
+    done
+    [ "$fail" -eq 0 ] && ok 'KDE shell/power stack present, GNOME apps absent, Dolphin default'
+fi
+
+# --- 5c. Desktop: firmware coverage ----------------------------------------
+if is_desktop; then
+    for pkg in firmware-misc-nonfree bluez-firmware; do
+        dpkg -s "$pkg" >/dev/null 2>&1 || problem "missing firmware package: $pkg"
+    done
+    [ "$fail" -eq 0 ] && ok 'base firmware packages installed'
 fi
 
 # --- 6. Desktop: boot branding ---------------------------------------------
