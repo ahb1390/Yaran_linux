@@ -66,7 +66,11 @@ Chrome (از مخزن APT رسمی و امضاشدهٔ گوگل)، Hiddify و v2
 رسمی و قفل‌شده با تأیید SHA-256)، Dolphin، Kate، Konsole، Gwenview، Okular،
 Ark، Spectacle، KCalc، Partition Manager، Plasma Discover با پشتیبانی
 Flatpak، Print Manager، timeshift و نیز firmware، گرافیک Mesa/Vulkan، صدای
-PipeWire، بلوتوث، AppArmor، nftables و به‌روزرسانی‌های خودکار.
+PipeWire، بلوتوث، AppArmor، nftables، پشتهٔ اشتراک‌گذاری صفحهٔ
+xdg-desktop-portal، فونت‌های کامل فارسی/CJK/ایموجی و ابزار
+`unattended-upgrades` (به‌صورت پیش‌فرض غیرفعال — به‌روزرسانی‌ها با
+`yaran-update` و توسط خود کاربر انجام می‌شوند؛
+[سیاست به‌روزرسانی](docs/updates-policy.fa.md) را ببینید).
 
 **Extended علاوه بر پایه، این‌ها را اضافه می‌کند:** GIMP، VirtualBox نسخهٔ
 ۷٫۲ (از مخزن APT رسمی و امضاشدهٔ Oracle)، VSCodium و Obsidian (نسخه‌های `.deb`

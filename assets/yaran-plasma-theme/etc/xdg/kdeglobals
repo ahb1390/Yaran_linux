@@ -1,6 +1,14 @@
 [KDE]
 LookAndFeelPackage=org.yaranlinux.desktop
 
+# Yaran Linux ships without a KDE Wallet experience: KWallet and every
+# application reading the kwallet KIO slave see this flag and skip wallet
+# creation and password prompts entirely (kwalletmanager and kwallet-pam are
+# excluded from the image; the remaining libkwallet library is a hard
+# dependency of plasma-workspace and kio, so it stays installed but unused).
+[Wallet]
+Enabled=false
+
 [Icons]
 Theme=breeze
 

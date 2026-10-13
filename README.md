@@ -66,8 +66,11 @@ Chrome (from Google's signed APT repository), Hiddify and v2rayN (pinned
 official `.deb` releases with SHA-256 verification), Dolphin, Kate, Konsole,
 Gwenview, Okular, Ark, Spectacle, KCalc, Partition Manager, Plasma Discover
 with Flatpak backend, Print Manager, timeshift, plus firmware, Mesa/Vulkan
-graphics, PipeWire audio, Bluetooth, AppArmor, nftables, and
-unattended-upgrades.
+graphics, PipeWire audio, Bluetooth, AppArmor, nftables, the
+xdg-desktop-portal screen-sharing stack, full Persian/CJK/emoji fonts, and
+the `unattended-upgrades` tooling (disabled by default — updates are
+user-initiated via `yaran-update`, see the
+[update policy](docs/updates-policy.md)).
 
 **Extended adds** on top of the base set: GIMP, VirtualBox 7.2 (from
 Oracle's signed APT repository), VSCodium and Obsidian (pinned official

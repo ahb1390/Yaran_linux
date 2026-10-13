@@ -1,0 +1,11 @@
+[Plymouth Theme]
+Name=Yaran
+Description=Yaran Linux boot splash
+ModuleName=script
+
+[script]
+# Installed to /usr/share/plymouth/themes/yaran by
+# hooks/desktop/plymouth-theme.sh; the background image is copied there from
+# the "Yaran Emblem" wallpaper at image build time.
+ImageDir=/usr/share/plymouth/themes/yaran
+ScriptFile=/usr/share/plymouth/themes/yaran/yaran.script
