@@ -14,6 +14,7 @@ guide:
 | Update policy | [updates-policy.md](updates-policy.md) | [updates-policy.fa.md](updates-policy.fa.md) |
 | APT repositories and mirrors | [apt-mirrors.md](apt-mirrors.md) | [apt-mirrors.fa.md](apt-mirrors.fa.md) |
 | Real-hardware QA checklist | [hardware-qa-checklist.md](hardware-qa-checklist.md) | [hardware-qa-checklist.fa.md](hardware-qa-checklist.fa.md) |
+| Hardware diagnostics guide | [hardware-diagnostics.md](hardware-diagnostics.md) | [hardware-diagnostics.fa.md](hardware-diagnostics.fa.md) |
 | Releases and artifacts | [releases.md](releases.md) | [releases.fa.md](releases.fa.md) |
 | Theme guide | [theme.md](theme.md) | [theme.fa.md](theme.fa.md) |
 | Contributing | [../CONTRIBUTING.md](../CONTRIBUTING.md) | [../CONTRIBUTING.fa.md](../CONTRIBUTING.fa.md) |

@@ -58,8 +58,25 @@ REQUIRED_PACKAGES = {
     # Firmware for common laptop hardware.
     'firmware-misc-nonfree',
     'bluez-firmware',
+    # Audio quality: rtkit grants PipeWire realtime priority (its absence
+    # shows up as "RTKit error: ServiceUnknown" on every session start);
+    # alsa-ucm-conf provides codec UCM profiles for correct speaker/
+    # headphone/mic path handling; zram-tools adds compressed RAM swap
+    # because Calamares installs without a swap partition by default.
+    'rtkit',
+    'alsa-ucm-conf',
+    'zram-tools',
     # Boot branding.
     'plymouth',
+}
+
+# AMD64-only additions: Intel thermal management (thermald exits cleanly on
+# non-Intel hardware but there is no reason to ship it on ARM).
+AMD64_REQUIRED_PACKAGES = {'thermald'}
+
+# Diagnostic tools only the Extended image carries.
+EXTENDED_DIAGNOSTIC_PACKAGES = {
+    'v4l-utils', 'vainfo', 'pciutils', 'usbutils', 'lshw', 'lm-sensors',
 }
 
 # Applications that must never appear in a Yaran desktop image; TLP would
@@ -92,6 +109,32 @@ class ManifestPolicyTests(unittest.TestCase):
                 packages = set(cfg['packages'])
                 missing = REQUIRED_PACKAGES - packages
                 self.assertFalse(missing, f'{name} is missing: {sorted(missing)}')
+
+    def test_amd64_variants_ship_thermald_and_enable_it(self):
+        for name, cfg in self.configs.items():
+            if 'amd64' not in name:
+                continue
+            with self.subTest(manifest=name):
+                self.assertTrue(AMD64_REQUIRED_PACKAGES <= set(cfg['packages']),
+                                f'{name} is missing {sorted(AMD64_REQUIRED_PACKAGES)}')
+                self.assertIn('thermald', cfg['services'].get('enable', []))
+        for name, cfg in self.configs.items():
+            if 'amd64' in name:
+                continue
+            with self.subTest(manifest=name):
+                self.assertFalse(AMD64_REQUIRED_PACKAGES & set(cfg['packages']),
+                                 f'{name} must not ship x86-only packages')
+
+    def test_diagnostic_tools_only_ship_in_extended(self):
+        for name, cfg in self.configs.items():
+            with self.subTest(manifest=name):
+                present = EXTENDED_DIAGNOSTIC_PACKAGES & set(cfg['packages'])
+                if name.endswith('extended.json'):
+                    self.assertFalse(EXTENDED_DIAGNOSTIC_PACKAGES - present,
+                                     f'extended missing {sorted(EXTENDED_DIAGNOSTIC_PACKAGES - present)}')
+                else:
+                    self.assertFalse(present,
+                                     f'{name} should not carry Extended-only tools: {sorted(present)}')
 
     def test_no_package_lists_are_duplicated(self):
         for name, cfg in self.configs.items():

@@ -14,6 +14,7 @@
 | سیاست به‌روزرسانی | [updates-policy.md](updates-policy.md) | [updates-policy.fa.md](updates-policy.fa.md) |
 | مخازن APT و Mirrorها | [apt-mirrors.md](apt-mirrors.md) | [apt-mirrors.fa.md](apt-mirrors.fa.md) |
 | چک‌لیست آزمون سخت‌افزار واقعی | [hardware-qa-checklist.md](hardware-qa-checklist.md) | [hardware-qa-checklist.fa.md](hardware-qa-checklist.fa.md) |
+| راهنمای تشخیص سخت‌افزار | [hardware-diagnostics.md](hardware-diagnostics.md) | [hardware-diagnostics.fa.md](hardware-diagnostics.fa.md) |
 | انتشار و artifactها | [releases.md](releases.md) | [releases.fa.md](releases.fa.md) |
 | راهنمای تم | [theme.md](theme.md) | [theme.fa.md](theme.fa.md) |
 | مشارکت | [../CONTRIBUTING.md](../CONTRIBUTING.md) | [../CONTRIBUTING.fa.md](../CONTRIBUTING.fa.md) |

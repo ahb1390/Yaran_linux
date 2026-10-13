@@ -178,3 +178,39 @@ each must render without tofu boxes (□) or fallback boxes:
 - [ ] Touchpad: two-finger scrolling and tap-to-click work (libinput).
 - [ ] Wi-Fi, Bluetooth, webcam and card reader are detected on at least one
       Intel and one AMD/Realtek/Broadcom machine if available.
+
+## 16. Audio quality (speakers, headphone, microphone, HDMI, Bluetooth)
+
+- [ ] Stereo test (e.g. a "left/right stereo test" video): both channels
+      are audible on the speakers; no crackle or distortion at 80% volume.
+- [ ] Plugging in headphones switches the output automatically and without
+      a loud pop; unplugging returns to the speakers.
+- [ ] Microphone: record and play back —
+      `arecord -f cd -d 5 /tmp/mic-test.wav && aplay /tmp/mic-test.wav` —
+      the voice is clearly recognizable, not clipped or inaudible.
+- [ ] In Google Meet's microphone test the internal mic is picked up and
+      the level meter reacts.
+- [ ] If the mic is noisy at defaults, lower "Internal Mic Boost" once in
+      pavucontrol (Input Devices) — this is a per-device runtime setting,
+      not something the image should hardcode.
+- [ ] HDMI: with a TV connected, HDMI audio appears as an output and plays.
+- [ ] Bluetooth: pair headphones, confirm A2DP in `wpctl status`, play
+      music; note that microphone over Bluetooth (HFP) is inherently low
+      quality on most headsets — a hardware/codec limit, not a distro bug.
+- [ ] After suspend/resume the default output is still correct and audio
+      plays.
+- [ ] `journalctl --user -b | grep -c RTKit` prints 0 (rtkit is present and
+      PipeWire gets realtime scheduling).
+
+## 17. Camera (video calls)
+
+- [ ] `v4l2-ctl --list-devices` (Extended image) lists the camera; the
+      kernel log has no `uvcvideo` errors.
+- [ ] In meet.google.com → camera test: preview appears, and the offered
+      resolutions match the sensor (e.g. 640×480 on old VGA modules — a
+      sensor limit, not software).
+- [ ] The browser asks for camera permission once and remembers it.
+- [ ] Video is usable in normal room light; in dark rooms judge the sensor
+      honestly — noisier image = physical sensor limit, do not "fix" it
+      with gain filters.
+- [ ] Switching cameras (if several exist) in the Meet selector works.

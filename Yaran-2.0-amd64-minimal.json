@@ -66,6 +66,7 @@
     "plasma-pa",
     "powerdevil",
     "upower",
+    "thermald",
     "bluedevil",
     "power-profiles-daemon",
     "pipewire",
@@ -75,6 +76,8 @@
     "wireplumber",
     "gstreamer1.0-pipewire",
     "libspa-0.2-bluetooth",
+    "rtkit",
+    "alsa-ucm-conf",
     "dolphin",
     "kate",
     "konsole",
@@ -169,7 +172,8 @@
     "vim",
     "tmux",
     "ranger",
-    "timeshift"
+    "timeshift",
+    "zram-tools"
   ],
   "exclude_packages": [
     "plasma-welcome",
@@ -241,7 +245,8 @@
       "fwupd-refresh.timer",
       "apparmor",
       "nftables",
-      "cups"
+      "cups",
+      "thermald"
     ],
     "disable": [
       "apt-daily.timer",

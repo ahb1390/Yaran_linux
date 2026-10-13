@@ -84,6 +84,25 @@ if is_desktop; then
     [ "$fail" -eq 0 ] && ok 'portal + PipeWire screen-sharing stack installed'
 fi
 
+# --- 3b. Desktop: audio quality, realtime scheduling and memory -----------
+# rtkit grants PipeWire/WirePlumber realtime priority; without it every
+# session logs "RTKit error: ServiceUnknown" and audio runs with worse
+# glitch resistance. alsa-ucm-conf provides the codec UCM profiles that
+# WirePlumber uses for correct speaker/headphone/mic path handling.
+# zram-tools adds compressed RAM swap — Calamares installs without a swap
+# partition by default, leaving the installed system with none at all.
+if is_desktop; then
+    for pkg in rtkit alsa-ucm-conf libspa-0.2-bluetooth zram-tools; do
+        dpkg -s "$pkg" >/dev/null 2>&1 || problem "missing audio/memory package: $pkg"
+    done
+    test -d /usr/share/alsa/ucm2 || problem 'ALSA UCM2 profile tree is missing'
+    if [ "$(dpkg --print-architecture)" = amd64 ]; then
+        dpkg -s thermald >/dev/null 2>&1 || \
+            problem 'thermald missing on amd64 (Intel laptop thermal management)'
+    fi
+    [ "$fail" -eq 0 ] && ok 'rtkit/UCM/zram/thermald present'
+fi
+
 # --- 4. Desktop: font coverage ---------------------------------------------
 if is_desktop; then
     for pkg in fonts-vazirmatn fonts-vazirmatn-variable fonts-noto-core \
