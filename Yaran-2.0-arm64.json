@@ -140,6 +140,7 @@
     "vlc",
     "curl",
     "wget",
+    "git",
     "fastfetch",
     "plasma-systemmonitor",
     "squashfs-tools",

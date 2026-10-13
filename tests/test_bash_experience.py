@@ -110,6 +110,9 @@ class SyntaxAndPolicyTests(unittest.TestCase):
             text = path.read_text()
             with self.subTest(manifest=path.name):
                 self.assertIn('hooks/common/install-ble.sh', text)
+                # git ships git-sh-prompt (/usr/lib/git-core/git-sh-prompt),
+                # which the branch display in the prompt depends on.
+                self.assertRegex(text, r'"git",', 'git must be a default desktop package')
         server = (ROOT / 'Yaran-Server-2.0-amd64.json').read_text()
         self.assertNotIn('install-ble.sh', server, 'server keeps plain bash')
 
@@ -169,7 +172,11 @@ class InteractivePtyTests(unittest.TestCase):
     def test_git_branch_and_dirty_state_in_prompt(self):
         repo = Path(self.temp.name) / 'repo'
         repo.mkdir()
-        bash(['-c', f'git init -q -b yaran-test "{repo}"'])
+        init = bash(['-c', f'git init -q -b yaran-test "{repo}"'])
+        self.assertEqual(
+            init.returncode, 0,
+            f'git init failed in the test environment: {init.stderr.strip()!r} '
+            '(is the git package installed?)')
         shell = self.spawn(workdir=str(repo))
         shell.send('')
         out = shell.read_until('yaran-test')
