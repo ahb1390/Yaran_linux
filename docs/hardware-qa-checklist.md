@@ -97,3 +97,84 @@ Test on **both** session types offered by SDDM (Wayland and X11):
 - [ ] Wi-Fi connects, audio plays, Bluetooth pairs (if hardware present).
 - [ ] Shutdown and reboot are clean (Plymouth hands over to SDDM and back
       without a text-mode flash).
+
+## 11. Laptop keys (volume, brightness, media)
+
+Test on a laptop; run `wev` (or `sudo showkey --keycodes` on a TTY) once to
+see which keycodes the kernel actually emits, so a failure can be attributed
+to a layer instead of guessed at.
+
+- [ ] Volume up / down changes the **real** output level (play a YouTube
+      video and watch both the OSD and the audible level); volume mute
+      toggles audibly.
+- [ ] After connecting headphones or a USB/Bluetooth speaker, the keys still
+      control the newly selected sink; switching the output device in the
+      audio applet restores control.
+- [ ] After suspend/resume, volume keys still work.
+- [ ] Brightness up/down changes the actual panel brightness (not just an
+      OSD): watch `/sys/class/backlight/*/brightness` or use the slider in
+      the battery applet.
+- [ ] Keyboard backlight keys (if the laptop has them) toggle the
+      backlight.
+- [ ] Play/pause/next/previous control a running player (VLC, Chrome tab
+      with media).
+- [ ] If a key does nothing: with `wev` open, press it. No event → the
+      problem is firmware/ACPI on that laptop model (note the exact model
+      and key); event present but no action → check
+      System Settings → Shortcuts → Global Shortcuts for conflicting
+      bindings. Report which layer failed.
+
+## 12. Power management (laptops)
+
+- [ ] The battery applet in the system tray shows percentage and AC/battery
+      state correctly.
+- [ ] System Settings → Power Management opens (powerdevil) and offers
+      screen-off and suspend timeouts; changes take effect.
+- [ ] Closing the laptop lid suspends the machine; opening it resumes.
+- [ ] After resume: display, sound, Wi-Fi and the volume keys all work.
+- [ ] The power profile switch (Balanced / Power Saver, from the battery
+      applet) changes profiles without errors — `powerprofilesctl get`
+      confirms.
+- [ ] `systemctl status tlp` shows the unit does not exist (TLP is excluded
+      to avoid conflicting with power-profiles-daemon).
+- [ ] On a desktop (no battery): the power applet degrades gracefully and
+      nothing crashes.
+
+## 13. KDE-only experience and default applications
+
+- [ ] The menu shows Dolphin, Kate, Konsole, Gwenview, Okular, Ark, System
+      Settings, Info Center — and **no** GNOME application (no "Files",
+      "Terminal", "Archive Manager", "Document Viewer").
+- [ ] `dpkg -l nautilus gnome-terminal file-roller evince` reports none
+      installed.
+- [ ] Double-clicking a folder in Dolphin, clicking the Home icon on the
+      desktop and opening a folder from Chrome all use Dolphin; `xdg-mime
+      query default inode/directory` prints `org.kde.dolphin.desktop`.
+- [ ] Images open in Gwenview, PDFs in Okular, archives in Ark.
+- [ ] A user created after install sees the same defaults.
+
+## 14. World-wide font coverage
+
+Paste these samples into Konsole, Dolphin's rename field and LibreOffice;
+each must render without tofu boxes (□) or fallback boxes:
+
+- Persian: یاران لینوکس — العربية हिन्दी ไทย
+- Scripts: ગુજરાતી (Gujarati), ಕನ್ನಡ (Kannada), မြန်မာ (Myanmar),
+  ქართული (Georgian), Հայերեն (Armenian), አማርኛ (Ethiopic),
+  བོད་ཡིག (Tibetan), ភាសាខ្មែរ (Khmer), ລາວ (Lao), עברית (Hebrew)
+- CJK: 简体中文, 繁體中文, 日本語, 한국어
+- Emoji: 🚀 👍 🇮🇷 (color, not monochrome)
+
+- [ ] All four groups render correctly in Chrome, Firefox, Konsole,
+      Dolphin and LibreOffice.
+- [ ] `fc-list :lang=xx` returns a family for each of the languages above.
+
+## 15. Firmware and hardware tooling
+
+- [ ] Info Center opens and shows CPU, memory, graphics (Mesa/DRI) and disk
+      information.
+- [ ] Discover → Firmware section (fwupd backend) lists the device or
+      cleanly reports "no updatable devices" — never a crash.
+- [ ] Touchpad: two-finger scrolling and tap-to-click work (libinput).
+- [ ] Wi-Fi, Bluetooth, webcam and card reader are detected on at least one
+      Intel and one AMD/Realtek/Broadcom machine if available.
