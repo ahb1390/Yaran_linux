@@ -20,17 +20,28 @@ is_desktop() { [ -e /usr/bin/plasmashell ]; }
 while IFS= read -r file; do
     while IFS= read -r line; do
         case "$line" in
+            \#*) continue ;;
             deb\ *|deb-src\ *)
                 case "$line" in
-                    *trusted=yes*|*trusted=\**|*check-valid-until=no*)
+                    *trusted=yes*|*allow-insecure=yes*|*check-valid-until=no*)
                         problem "insecure option in $file: $line"
                         ;;
                 esac
+                # Vendor repositories must pin their own signing key. Plain
+                # Debian archives (the default mirror or any regional mirror
+                # of it, e.g. a local university or ISP mirror) are verified
+                # against debian-archive-keyring whatever host they use, so a
+                # Debian suite without signed-by is fine — anything else is
+                # not an acceptable source for a default image.
                 case "$line" in
-                    *deb.debian.org*|*security.debian.org*) : ;;
-                    *signed-by=*) : ;;
-                    \#*) : ;;
-                    *) problem "non-Debian source without signed-by in $file: $line" ;;
+                    *signed-by=*)
+                        key=$(printf '%s' "$line" | sed -n 's/.*signed-by=\([^] ]*\).*/\1/p')
+                        if [ -n "$key" ] && [ ! -e "$key" ]; then
+                            problem "signed-by keyring $key missing in $file"
+                        fi
+                        ;;
+                    *trixie*|*stable*|*bookworm*|*bullseye*|*testing*|*sid*) : ;;
+                    *) problem "unrecognized non-Debian source without signed-by in $file: $line" ;;
                 esac
                 ;;
         esac
