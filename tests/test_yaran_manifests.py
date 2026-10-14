@@ -13,6 +13,8 @@ regressions they catch cannot silently return:
 """
 import json
 import re
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -327,6 +329,69 @@ class WalletPolicyTests(unittest.TestCase):
             with self.subTest(manifest=path.name):
                 self.assertIn('kwalletmanager', cfg['exclude_packages'])
                 self.assertIn('kwallet-pam', cfg['exclude_packages'])
+
+
+class SpacePathRegressionTests(unittest.TestCase):
+    """Quoting bugs are semantic: `bash -n` accepts them and only a real
+    build inside the image fails. Assigning
+        background=/usr/share/wallpapers/Yaran Emblem/...
+    unquoted broke all three desktop CI builds; these tests keep the
+    mistake from ever coming back."""
+
+    HOOKS = sorted((ROOT / 'hooks').rglob('*.sh')) + [ROOT / 'assets/bash/yaran-bashrc']
+
+    def test_no_unquoted_assignment_contains_a_space(self):
+        for hook in self.HOOKS:
+            heredoc = None
+            for number, line in enumerate(hook.read_text().splitlines(), 1):
+                stripped = line.strip()
+                if heredoc:
+                    if stripped == heredoc:
+                        heredoc = None
+                    continue
+                if '<<' in stripped:
+                    match = re.search(r"<<-?\s*['\"]?(\w+)['\"]?\s*$", stripped)
+                    heredoc = match.group(1) if match else None
+                if stripped.startswith('#'):
+                    continue
+                assignment = re.match(r"([A-Za-z_]\w*)=([^'\"$].*\s.*)$", stripped)
+                if assignment:
+                    self.fail(f'{hook}:{number}: unquoted assignment containing '
+                              f'a space: {stripped!r}')
+
+    def test_space_containing_path_survives_the_hooks_quoting_pattern(self):
+        # Execute the quoting pattern the theme hooks use against a fake
+        # tree whose path contains a space, and prove the unquoted variant
+        # really fails — documenting why the quotes must stay.
+        with tempfile.TemporaryDirectory() as tmp:
+            image_dir = Path(tmp) / 'usr/share/wallpapers/Yaran Emblem/contents/images'
+            image_dir.mkdir(parents=True)
+            (image_dir / '1585x992.png').write_bytes(b'\x89PNG-fixture')
+            quoted = (
+                f'background="{image_dir}/1585x992.png"\n'
+                '[ -f "$background" ] || { echo "quoted form lost the path" >&2; exit 1; }\n'
+                'cp "$background" "$1/background.png"\n'
+            )
+            result = subprocess.run(['bash', '-euo', 'pipefail', '-c', quoted, '_', tmp],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((Path(tmp) / 'background.png').read_bytes(), b'\x89PNG-fixture')
+            unquoted = (
+                f'background={image_dir}/1585x992.png\n'
+                '[ -f "$background" ]\n'
+            )
+            result = subprocess.run(['bash', '-c', unquoted], capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0,
+                                'the unquoted variant unexpectedly succeeded; '
+                                'the test fixture no longer models the bug')
+
+    def test_theme_hooks_quote_the_real_asset_path(self):
+        image = ROOT / 'assets/wallpapers/Yaran Emblem/contents/images/1585x992.png'
+        self.assertTrue(image.is_file(), 'the GRUB/Plymouth background asset is missing')
+        expected = 'background="/usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png"'
+        for hook in ('hooks/desktop/grub-theme.sh', 'hooks/desktop/plymouth-theme.sh'):
+            with self.subTest(hook=hook):
+                self.assertIn(expected, (ROOT / hook).read_text())
 
 
 if __name__ == '__main__':

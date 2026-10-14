@@ -12,7 +12,7 @@ echo 'Installing Yaran GRUB theme for the installed system'
 install -d -m 0755 "$theme_dir/fonts"
 install -m 0644 /.temp_assets/grub-theme/yaran/theme.txt "$theme_dir/theme.txt"
 
-background=/usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png
+background="/usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png"
 if [ ! -f "$background" ]; then
     echo "grub-theme: wallpaper background not found at $background" >&2
     echo "grub-theme: run hooks/desktop/plasma-assets.sh before this hook" >&2

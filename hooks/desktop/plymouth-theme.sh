@@ -19,7 +19,7 @@ install -d -m 0755 "$theme_dir"
 install -m 0644 /.temp_assets/plymouth/yaran/yaran.plymouth "$theme_dir/yaran.plymouth"
 install -m 0644 /.temp_assets/plymouth/yaran/yaran.script "$theme_dir/yaran.script"
 
-background=/usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png
+background="/usr/share/wallpapers/Yaran Emblem/contents/images/1585x992.png"
 if [ ! -f "$background" ]; then
     echo "plymouth-theme: background not found at $background" >&2
     echo "plymouth-theme: run hooks/desktop/plasma-assets.sh before this hook" >&2

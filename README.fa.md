@@ -32,7 +32,7 @@
 | دسکتاپ Extended (AMD64) | `Yaran-2.0-amd64-extended.json` | ✅ ساخت و تست‌شده در CI |
 | دسکتاپ (ARM64) | `Yaran-2.0-arm64.json` | ✅ ساخته‌شده در CI روی runner بومی ARM64 |
 | سرور (AMD64) | `Yaran-Server-2.0-amd64.json` | ✅ ساخت و تست‌شده در CI |
-| دسکتای قدیمی (AMD64) | `Yaran-2.0-amd64.json` | 🟡 معتبرسازی می‌شود اما دیگر در CI ساخته نمی‌شود |
+| دسکتای قدیمی (AMD64) | `Yaran-2.0-amd64.json` | ✅ ساخت و تست‌شده در CI (در Releaseها منتشر نمی‌شود) |
 
 امضای Secure Boot، bootstrap بین معماری‌ها و معماری‌هایی غیر از
 amd64/arm64/armhf **پیاده‌سازی نشده‌اند** (📋).

@@ -32,7 +32,7 @@ Current status of the editions:
 | Desktop Extended (AMD64) | `Yaran-2.0-amd64-extended.json` | ✅ Built and tested in CI |
 | Desktop (ARM64) | `Yaran-2.0-arm64.json` | ✅ Built in CI on a native ARM64 runner |
 | Server (AMD64) | `Yaran-Server-2.0-amd64.json` | ✅ Built and tested in CI |
-| Legacy desktop (AMD64) | `Yaran-2.0-amd64.json` | 🟡 Validated, no longer built by CI |
+| Legacy desktop (AMD64) | `Yaran-2.0-amd64.json` | ✅ Built and tested in CI (not published in releases) |
 
 Secure Boot signing, cross-architecture bootstrap, and architectures other
 than amd64/arm64/armhf are **not implemented** (📋).

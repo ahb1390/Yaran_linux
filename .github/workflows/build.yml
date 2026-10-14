@@ -56,6 +56,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - config: Yaran-2.0-amd64.json
+            runner: ubuntu-latest
+            artifact: yaran-amd64
           - config: Yaran-2.0-amd64-minimal.json
             runner: ubuntu-latest
             artifact: yaran-amd64-minimal
