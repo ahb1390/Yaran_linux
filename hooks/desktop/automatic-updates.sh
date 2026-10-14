@@ -38,10 +38,15 @@ EOF
 #    edits symlinks), and the units stay installed and documented, so a user
 #    can re-enable them at any time with `systemctl enable --now`.
 for unit in apt-daily.timer apt-daily-upgrade.timer unattended-upgrades.service; do
-    if systemctl list-unit-files "$unit" --no-legend 2>/dev/null | grep -q "$unit"; then
-        systemctl disable "$unit" 2>/dev/null || true
-        echo "  disabled $unit"
-    fi
+    # capture instead of `| grep -q` (pipefail + short-circuiting grep is a
+    # SIGPIPE trap; see hooks/common/verify-image.sh for the full note)
+    unit_files=$(systemctl list-unit-files "$unit" --no-legend 2>/dev/null || true)
+    case "$unit_files" in
+        *"$unit"*)
+            systemctl disable "$unit" 2>/dev/null || true
+            echo "  disabled $unit"
+            ;;
+    esac
 done
 
 # 3) On-demand update helper shown in the menu and usable from a terminal.

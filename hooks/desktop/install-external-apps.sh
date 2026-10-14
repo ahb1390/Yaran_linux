@@ -76,11 +76,17 @@ if [ "$(dpkg --print-architecture)" = amd64 ]; then
     verify_command hiddify Hiddify
     verify_command v2rayn v2rayN
     # Catch missing shared libraries now instead of at the user's first click.
-    if ldd /usr/share/hiddify/hiddify 2>/dev/null | grep -q 'not found'; then
-        echo "external-apps: Hiddify has unresolved shared libraries:" >&2
-        ldd /usr/share/hiddify/hiddify | grep 'not found' >&2
-        exit 1
-    fi
+    # Capture the ldd output instead of piping into grep -q: with pipefail a
+    # short-circuiting grep can kill ldd with SIGPIPE and report a false
+    # failure (or mask a real one) on large outputs.
+    hiddify_libs=$(ldd /usr/share/hiddify/hiddify 2>/dev/null || true)
+    case "$hiddify_libs" in
+        *'not found'*)
+            echo "external-apps: Hiddify has unresolved shared libraries:" >&2
+            printf '%s\n' "$hiddify_libs" | grep 'not found' >&2 || true
+            exit 1
+            ;;
+    esac
     test -f /usr/share/applications/hiddify.desktop || {
         echo "external-apps: hiddify.desktop is missing" >&2
         exit 1

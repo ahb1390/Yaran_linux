@@ -114,9 +114,16 @@ if is_desktop; then
         problem 'Yaran fontconfig defaults missing'
     # Actual script coverage in fontconfig — a package being installed is not
     # proof that text renders. Each line must resolve to at least one family.
+    #
+    # NOTE: output is captured into a variable instead of piping into
+    # `grep -q`. With `set -o pipefail`, grep -q exits on the first match
+    # while fc-list is still writing; on images with thousands of fonts
+    # (Extended with fonts-noto-extra / cjk-extra) fc-list then dies with
+    # SIGPIPE and the pipeline fails even though the font IS present.
     while IFS='|' read -r lang family; do
         [ -n "$lang" ] || continue
-        if ! fc-list ":lang=$lang" family 2>/dev/null | grep -q .; then
+        lang_fonts=$(fc-list ":lang=$lang" family 2>/dev/null || true)
+        if [ -z "$lang_fonts" ]; then
             problem "no font registered for language '$lang' ($family)"
         fi
     done <<'EOF'
@@ -141,18 +148,29 @@ zh-tw|Chinese traditional (Noto CJK)
 ja|Japanese (Noto CJK)
 ko|Korean (Noto CJK)
 EOF
-    fc-list :lang=zh family 2>/dev/null | grep -q 'Noto Sans CJK' || \
-        problem 'no CJK font registered in fontconfig'
-    fc-list :lang=fa family 2>/dev/null | grep -q 'Vazirmatn' || \
-        problem 'no Persian font registered in fontconfig'
+    zh_fonts=$(fc-list :lang=zh family 2>/dev/null || true)
+    case "$zh_fonts" in
+        *'Noto Sans CJK'*) : ;;
+        *) problem 'no CJK font registered in fontconfig' ;;
+    esac
+    fa_fonts=$(fc-list :lang=fa family 2>/dev/null || true)
+    case "$fa_fonts" in
+        *Vazirmatn*) : ;;
+        *) problem 'no Persian font registered in fontconfig' ;;
+    esac
     [ "$fail" -eq 0 ] && ok 'font script coverage verified (20 languages)'
 fi
 
 # --- 5. Desktop: skel and wallet policy ------------------------------------
 if is_desktop; then
     test -d /etc/skel/Projects || problem '/etc/skel/Projects is missing'
-    grep -A2 '^\[Wallet\]' /etc/xdg/kdeglobals 2>/dev/null | grep -q 'Enabled=false' || \
-        problem 'KWallet is not disabled in /etc/xdg/kdeglobals'
+    # (checks capture file contents into variables instead of piping into
+    # grep -q — see the font section for the pipefail/SIGPIPE rationale)
+    wallet_cfg=$(sed -n '/^\[Wallet\]/,+2p' /etc/xdg/kdeglobals 2>/dev/null || true)
+    case "$wallet_cfg" in
+        *Enabled=false*) : ;;
+        *) problem 'KWallet is not disabled in /etc/xdg/kdeglobals' ;;
+    esac
     [ "$fail" -eq 0 ] && ok 'skel Projects folder present; KWallet disabled'
 fi
 
@@ -170,12 +188,15 @@ if is_desktop; then
             problem "unwanted package installed: $pkg"
         fi
     done
-    grep -A2 '^\[Default Applications\]' /etc/xdg/mimeapps.list 2>/dev/null \
-        | grep -qx 'inode/directory=org.kde.dolphin.desktop' || \
-        problem 'Dolphin is not the default file manager in /etc/xdg/mimeapps.list'
+    mime_cfg=$(sed -n '/\[Default Applications\]/,+3p' /etc/xdg/mimeapps.list 2>/dev/null || true)
+    case "$mime_cfg" in
+        *'inode/directory=org.kde.dolphin.desktop'*) : ;;
+        *) problem 'Dolphin is not the default file manager in /etc/xdg/mimeapps.list' ;;
+    esac
     for app in dolphin kate konsole gwenview okular ark; do
-        ls /usr/share/applications/ 2>/dev/null | grep -qi "$app" || \
-            problem "menu entry missing for $app"
+        entry=$(find /usr/share/applications -maxdepth 1 -iname "*${app}*" \
+                -print -quit 2>/dev/null || true)
+        [ -n "$entry" ] || problem "menu entry missing for $app"
     done
     [ "$fail" -eq 0 ] && ok 'KDE shell/power stack present, GNOME apps absent, Dolphin default'
 fi
@@ -206,10 +227,13 @@ fi
 # --- 7. Desktop: Hiddify (when shipped) ------------------------------------
 if is_desktop && dpkg -s hiddify >/dev/null 2>&1; then
     test -x /usr/bin/hiddify || problem 'hiddify is installed but /usr/bin/hiddify is missing'
-    if ldd /usr/share/hiddify/hiddify 2>/dev/null | grep -q 'not found'; then
-        problem 'hiddify has unresolved shared libraries:'
-        ldd /usr/share/hiddify/hiddify | grep 'not found' >&2
-    fi
+    hiddify_libs=$(ldd /usr/share/hiddify/hiddify 2>/dev/null || true)
+    case "$hiddify_libs" in
+        *'not found'*)
+            problem 'hiddify has unresolved shared libraries:'
+            printf '%s\n' "$hiddify_libs" | grep 'not found' >&2 || true
+            ;;
+    esac
     [ "$fail" -eq 0 ] && ok 'hiddify launcher and libraries resolve'
 fi
 

@@ -394,5 +394,60 @@ class SpacePathRegressionTests(unittest.TestCase):
                 self.assertIn(expected, (ROOT / hook).read_text())
 
 
+class PipefailGrepRegressionTests(unittest.TestCase):
+    """`set -o pipefail` + `grep -q` is a trap: the grep exits on the first
+    match while the upstream producer is still writing, the producer dies
+    with SIGPIPE (exit 141) and the whole pipeline reports failure even
+    though the match existed. On the Extended image the fc-list output is
+    large enough (fonts-noto-extra/cjk-extra) to hit this every time —
+    this is what failed in CI run 38573661931."""
+
+    HOOKS = sorted((ROOT / 'hooks').rglob('*.sh'))
+
+    def test_no_hook_pipes_into_a_short_circuiting_grep(self):
+        for hook in self.HOOKS:
+            with self.subTest(hook=hook.name):
+                # Comments may discuss the pattern; only real code counts.
+                code = '\n'.join(line for line in hook.read_text().splitlines()
+                                 if not line.lstrip().startswith('#'))
+                self.assertNotRegex(
+                    code, r'\|\s*grep\s+-[A-Za-z]*q',
+                    f'{hook.name} pipes into grep -q; capture the output '
+                    'into a variable and match against it instead')
+
+    def test_grep_q_pipeline_really_breaks_on_large_streams(self):
+        # Reproduce the CI failure mode deterministically: an early match
+        # kills the producer with SIGPIPE under pipefail.
+        trap = subprocess.run(
+            ['bash', '-euo', 'pipefail', '-c', 'seq 1 200000 | grep -q 1'],
+            capture_output=True)
+        self.assertNotEqual(trap.returncode, 0,
+                            'expected the grep -q pipeline to fail under '
+                            'pipefail with a large stream')
+        # ...and prove the capture-then-match pattern used by the hooks
+        # survives the same volume.
+        capture = subprocess.run(
+            ['bash', '-euo', 'pipefail', '-c',
+             'big=$(seq 1 200000)\n'
+             'case "$big" in *199999*) : ;; *) exit 1 ;; esac\n'
+             'printf "%s\\n" "$big" | wc -l >/dev/null\n'
+             'echo survived'],
+            capture_output=True, text=True)
+        self.assertEqual(capture.returncode, 0, capture.stderr)
+        self.assertIn('survived', capture.stdout)
+
+    def test_font_coverage_checks_still_require_real_families(self):
+        # The pipefail fix must not weaken the coverage criteria: the hook
+        # still demands a registered family per script and the Noto
+        # families by name.
+        hook = (ROOT / 'hooks/common/verify-image.sh').read_text()
+        for lang in ('fa', 'ar', 'he', 'hi', 'th', 'bo', 'hy', 'ka', 'am',
+                     'zh-cn', 'zh-tw', 'ja', 'ko'):
+            self.assertIn(f'{lang}|', hook)
+        self.assertIn("case \"$zh_fonts\" in", hook)
+        self.assertIn("'Noto Sans CJK'", hook)
+        self.assertIn('Vazirmatn', hook)
+
+
 if __name__ == '__main__':
     unittest.main()
