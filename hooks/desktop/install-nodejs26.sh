@@ -93,7 +93,21 @@ if recorded != pinned:
 PY
 
 install -d -m 0755 "$ROOTFS/usr/local/lib/nodejs"
-tar -xJf "$work/$tarball" -C "$ROOTFS/usr/local/lib/nodejs"
+# Extract with Python's stdlib tarfile instead of `tar -xJf`: the pre_chroot
+# hook runs on the BUILD HOST, where the external `xz` binary is not part of
+# the minimal CI toolchain (`tar (child): xz: Cannot exec` broke the Extended
+# build). python3 is already required by this hook for the downloads and the
+# SHA-256/SHASUMS256.txt checks, and its stdlib lzma module decompresses
+# .tar.xz without any external binary. The archive's integrity was already
+# established above, before extraction.
+python3 - "$work/$tarball" "$ROOTFS/usr/local/lib/nodejs" <<'PY'
+import sys, tarfile
+with tarfile.open(sys.argv[1], "r:xz") as archive:
+    try:
+        archive.extractall(sys.argv[2], filter="data")
+    except TypeError:  # Python without the extraction-filter argument
+        archive.extractall(sys.argv[2])
+PY
 # The upstream tarball extracts to node-<version>-linux-<arch>/ (the platform
 # suffix is part of the directory name), NOT node-<version>/.
 install_dir="$ROOTFS/usr/local/lib/nodejs/node-$NODE_VERSION-linux-$node_arch"

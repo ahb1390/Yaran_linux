@@ -9,9 +9,12 @@
 #
 # Repository policy: nothing in this project may add a non-Debian source to
 # /etc/apt/sources.list.d without that explicit opt-in. build.py forwards
-# the manifest flag as YARAN_VENDOR_REPOSITORIES=1; every .list file written
-# here is also recorded in /etc/apt/yaran-vendor-repos so verify-image.sh
-# can prove the file had consent.
+# the manifest flag as YARAN_VENDOR_REPOSITORIES=1; every vendor ORIGIN HOST
+# enabled here is recorded in /etc/apt/yaran-vendor-repos so
+# verify-image.sh can prove the origin had consent. Consent is tracked per
+# host (not per filename) because google-chrome-stable's own postinst
+# writes its deb822 google-chrome.sources for the same origin, and the
+# manifest opted in to that origin.
 set -euo pipefail
 
 : "${ROOTFS:?ROOTFS must point at the bootstrap rootfs}"
@@ -69,6 +72,6 @@ fetch_key "https://dl.google.com/linux/linux_signing_key.pub" \
 cat > "$sources_dir/yaran-google-chrome.list" <<'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main
 EOF
-echo "yaran-google-chrome.list" >> "$ROOTFS/etc/apt/yaran-vendor-repos"
+echo "dl.google.com" >> "$ROOTFS/etc/apt/yaran-vendor-repos"
 
 echo "vendor-repos: done"

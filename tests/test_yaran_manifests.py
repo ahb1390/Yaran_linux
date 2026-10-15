@@ -12,8 +12,10 @@ regressions they catch cannot silently return:
   * Hiddify's runtime dependency and launcher are handled by the hook.
 """
 import json
+import os
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -609,6 +611,212 @@ class DesktopFontIconTests(unittest.TestCase):
         self.assertIn('IconTheme=breeze', globals_)
         self.assertIn('breeze', load(DESKTOP_MANIFESTS[0])['packages'],
                       'the selected icon theme must be installed')
+
+
+class CIFailureRegressionTests(unittest.TestCase):
+    """Regressions for the three real failures of CI run 38727935250
+    (commit 6dfcdfa, "Build & Validate Yaran Linux" run #8):
+
+      1. AMD64+ARM64: verify-image reported
+         "the installed GRUB theme uses terminal-color" — a FALSE POSITIVE:
+         the theme.txt '#' comment that documents the GRUB 2.12 history
+         mentions the literal string, and the old check matched it.
+      2. Minimal: verify-image reported
+         "vendor repository host dl.google.com in
+         /etc/apt/sources.list.d/google-chrome.sources has no
+         vendor_repositories opt-in" — google-chrome-stable's OWN postinst
+         writes that deb822 file on a fresh install; consent was tracked
+         per FILENAME, so the package's file had no matching entry.
+      3. Extended: install-nodejs26.sh failed with
+         "tar (child): xz: Cannot exec" — the pre_chroot hook extracts the
+         .tar.xz on the BUILD HOST, where the minimal CI container ships
+         no xz binary.
+
+    Each test runs the REAL check code extracted from the hooks against
+    fixtures that model the built image, so the checks cannot silently
+    drift back to the broken behaviour."""
+
+    VERIFY = ROOT / 'hooks/common/verify-image.sh'
+
+    @staticmethod
+    def extract_block(text, start_prefix, end_predicate):
+        """Return the real hook lines from the one starting with
+        start_prefix through the first line satisfying end_predicate."""
+        lines = text.splitlines()
+        start = next(i for i, line in enumerate(lines)
+                     if line.startswith(start_prefix))
+        end = next(i for i in range(start, len(lines))
+                   if end_predicate(lines[i]))
+        return '\n'.join(lines[start:end + 1])
+
+    @staticmethod
+    def run_with_definitions(block, tmp_path, extra=''):
+        harness = (
+            'fail=0\n'
+            'problem() { echo "PROBLEM: $*" >&2; fail=1; }\n'
+            'ok() { echo "OK: $*"; }\n'
+            f'{extra}\n'
+            f'{block}\n'
+            'echo "FAILCOUNT=$fail"\n'
+        )
+        return subprocess.run(['bash', '-c', harness], cwd=tmp_path,
+                              capture_output=True, text=True)
+
+    # --- failure 1: theme.txt comment false positive ------------------------
+
+    def test_theme_check_ignores_documenting_comments(self):
+        hook = self.VERIFY.read_text()
+        block = self.extract_block(
+            hook, '    theme_content=$(grep -Ev',
+            lambda line: line.strip() == 'esac')
+        with tempfile.TemporaryDirectory() as tmp:
+            theme = Path(tmp) / 'theme.txt'
+            # The REAL repository theme: mentions terminal-color only in
+            # '#' comments (the documentation of this very CI failure).
+            theme.write_text((ROOT / 'assets/grub-theme/yaran/theme.txt').read_text())
+            result = self.run_with_definitions(
+                block.replace('/usr/share/grub/themes/yaran/theme.txt',
+                              str(theme)), tmp)
+            self.assertNotIn('PROBLEM', result.stdout + result.stderr,
+                             'the documenting comment must not trip the check')
+            self.assertIn('FAILCOUNT=0', result.stdout)
+            # A theme that really uses the property must still fail.
+            theme.write_text('title-text: "Yaran Linux"\n'
+                             'terminal-color: "#E7F5EC"\n')
+            result = self.run_with_definitions(
+                block.replace('/usr/share/grub/themes/yaran/theme.txt',
+                              str(theme)), tmp)
+            self.assertIn('FAILCOUNT=1', result.stdout)
+            self.assertIn('terminal-color', result.stderr)
+
+    def test_theme_check_filters_comments_exactly_like_grub(self):
+        hook = self.VERIFY.read_text()
+        self.assertIn("grep -Ev '^[[:space:]]*#'", hook,
+                      'GRUB ignores "#" comment lines; the check must too')
+
+    # --- failure 2: Chrome postinst's own google-chrome.sources -------------
+
+    # Byte-for-byte content that google-chrome-stable's postinst
+    # (gen_sources_content, v155.0.8059.79-1) writes to
+    # /etc/apt/sources.list.d/google-chrome.sources on a fresh install.
+    CHROME_POSTINST_SOURCES = (
+        '### THIS FILE IS AUTOMATICALLY CONFIGURED ###\n'
+        '# Changes to this file will not be preserved.\n'
+        '# This file will not be recreated if removed.\n'
+        'X-Repolib-Name: Google Chrome\n'
+        'Types: deb\n'
+        'URIs: https://dl.google.com/linux/chrome-stable/deb/\n'
+        'Suites: stable\n'
+        'Components: main\n'
+        'Architectures: amd64\n'
+        'Signed-By: /usr/share/keyrings/google-chrome.gpg\n'
+    )
+
+    def consent_block(self):
+        return self.extract_block(
+            self.VERIFY.read_text(), 'consent=$(tr',
+            lambda line: line.startswith("[ \"$fail\" -eq 0 ] && ok 'no vendor"))
+
+    def prepare_apt_sandbox(self, tmp, consent):
+        etc = Path(tmp) / 'etc'
+        (etc / 'sources.list.d').mkdir(parents=True)
+        (etc / 'sources.list').write_text(
+            'deb http://deb.debian.org/debian trixie main\n'
+            'deb http://deb.debian.org/debian trixie-backports main\n')
+        # The hook's own file (as vendor-repos.sh writes it)...
+        (etc / 'sources.list.d/yaran-google-chrome.list').write_text(
+            'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] '
+            'https://dl.google.com/linux/chrome/deb/ stable main\n')
+        # ...plus the file google-chrome-stable's postinst adds itself.
+        (etc / 'sources.list.d/google-chrome.sources').write_text(
+            self.CHROME_POSTINST_SOURCES)
+        if consent is not None:
+            (etc / 'yaran-vendor-repos').write_text(consent)
+        return self.consent_block().replace('/etc/apt', f'{etc}')
+
+    def test_chrome_postinst_sources_pass_when_the_origin_is_consented(self):
+        """The Minimal manifest opts in with "vendor_repositories": true and
+        vendor-repos.sh records the dl.google.com origin; the SECOND file
+        that Chrome's own postinst writes for the SAME origin must then be
+        accepted — the policy checks the origin, not the filename."""
+        with tempfile.TemporaryDirectory() as tmp:
+            block = self.prepare_apt_sandbox(tmp, 'dl.google.com\n')
+            result = self.run_with_definitions(block, tmp)
+            self.assertNotIn('PROBLEM', result.stdout + result.stderr,
+                             result.stdout + result.stderr)
+            self.assertIn('FAILCOUNT=0', result.stdout)
+
+    def test_vendor_source_without_consent_still_fails_the_build(self):
+        """Removing the opt-in must bring the failure back — the check may
+        not be weakened by the false-positive fix."""
+        with tempfile.TemporaryDirectory() as tmp:
+            block = self.prepare_apt_sandbox(tmp, None)
+            result = self.run_with_definitions(block, tmp)
+            self.assertIn('FAILCOUNT=1', result.stdout)
+            self.assertIn('dl.google.com', result.stderr)
+            self.assertIn('has no vendor_repositories opt-in', result.stderr)
+
+    def test_rogue_origin_without_consent_still_fails_the_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            block = self.prepare_apt_sandbox(tmp, 'dl.google.com\n')
+            rogue = Path(tmp) / 'etc/sources.list.d/rogue.sources'
+            rogue.write_text('Types: deb\nURIs: https://evil.example/repo\n'
+                             'Suites: stable\nComponents: main\n')
+            result = self.run_with_definitions(block, tmp)
+            self.assertIn('FAILCOUNT=1', result.stdout)
+            self.assertIn('evil.example', result.stderr)
+
+    def test_vendor_hooks_record_origin_hosts_not_filenames(self):
+        chrome = (ROOT / 'hooks/desktop/vendor-repos.sh').read_text()
+        self.assertIn('echo "dl.google.com" >> "$ROOTFS/etc/apt/yaran-vendor-repos"',
+                      chrome)
+        vbox = (ROOT / 'hooks/desktop/vendor-repos-extended.sh').read_text()
+        self.assertIn('echo "download.virtualbox.org" >> '
+                      '"$ROOTFS/etc/apt/yaran-vendor-repos"', vbox)
+
+    # --- failure 3: xz missing on the build host ---------------------------
+
+    def test_nodejs_extraction_needs_no_external_xz_binary(self):
+        hook = (ROOT / 'hooks/desktop/install-nodejs26.sh').read_text()
+        # Comments may discuss the old `tar -xJf` failure mode; only real
+        # code counts.
+        code = '\n'.join(line for line in hook.splitlines()
+                         if not line.lstrip().startswith('#'))
+        self.assertNotIn('tar -xJf', code,
+                         'tar -xJf shells out to the xz binary, absent in '
+                         'the CI build container')
+        self.assertIn('r:xz', hook, 'Python stdlib lzma must do the extraction')
+        # The CI build environment still ships xz-utils for other tooling.
+        ci = (ROOT / 'scripts/ci-build.sh').read_text()
+        self.assertIn('xz-utils', ci)
+
+    def test_nodejs_extraction_runs_without_xz_on_path(self):
+        """Execute the hook's real extraction snippet with a PATH that has
+        ONLY python3 — no xz anywhere — and prove the archive extracts."""
+        hook = (ROOT / 'hooks/desktop/install-nodejs26.sh').read_text()
+        snippet = self.extract_block(hook, 'python3 - "$work/$tarball"',
+                                     lambda line: line == 'PY')
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            payload = tmp / 'payload.txt'
+            payload.write_text('node fixture payload')
+            import tarfile as _tarfile
+            with _tarfile.open(tmp / 'fixture.tar.xz', 'w:xz') as archive:
+                archive.add(payload, arcname='node-fixture-linux-x64/payload.txt')
+            bin_dir = tmp / 'bin'
+            bin_dir.mkdir()
+            os.symlink(sys.executable, bin_dir / 'python3')
+            rootfs = tmp / 'rootfs'
+            (rootfs / 'usr/local/lib/nodejs').mkdir(parents=True)
+            script = (f'work={tmp}\ntarball=fixture.tar.xz\n'
+                      f'ROOTFS={rootfs}\n' + snippet + '\n')
+            result = subprocess.run(
+                ['/bin/bash', '-c', script], env={'PATH': str(bin_dir)},
+                capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            extracted = (rootfs / 'usr/local/lib/nodejs'
+                         / 'node-fixture-linux-x64/payload.txt')
+            self.assertEqual(extracted.read_text(), 'node fixture payload')
 
 
 class PipefailGrepRegressionTests(unittest.TestCase):

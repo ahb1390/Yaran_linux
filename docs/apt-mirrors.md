@@ -50,12 +50,16 @@ non-amd64 hosts.
 
 Adding a vendor repository is an **explicit per-manifest decision**: the
 hooks only run when the manifest sets `"vendor_repositories": true`
-(forwarded as `YARAN_VENDOR_REPOSITORIES=1`), record every `.list` file
-they wrote in `/etc/apt/yaran-vendor-repos`, and
+(forwarded as `YARAN_VENDOR_REPOSITORIES=1`), record every vendor **origin
+host** they enabled in `/etc/apt/yaran-vendor-repos`, and
 `hooks/common/verify-image.sh` fails the build if any non-Debian source in
-`sources.list.d` has no matching opt-in entry. A manifest without the flag
-never adds a vendor repository — the plain Debian suites are always
-preserved untouched.
+`sources.list.d` has no matching opt-in entry. Consent is tracked per host
+rather than per filename because a shipped package can register its own
+source file for an already-opted-in origin — `google-chrome-stable`'s
+postinst writes `/etc/apt/sources.list.d/google-chrome.sources` (deb822) on
+a fresh install — and the policy checks the origin, not the file. A manifest
+without the flag never adds a vendor repository — the plain Debian suites
+are always preserved untouched.
 
 Hiddify and v2rayN do **not** use APT repositories at all: they are pinned
 `.deb` files verified against a recorded SHA-256

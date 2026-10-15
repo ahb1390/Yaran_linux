@@ -5,7 +5,7 @@
 # packaged in Debian trixie; Oracle publishes its own signed repository and
 # the repository policy requires that adding it is always a conscious,
 # per-manifest decision, never automatic. amd64 hosts only — VirtualBox has
-# no official ARM host support. The written .list file is recorded in
+# no official ARM host support. The origin host is recorded in
 # /etc/apt/yaran-vendor-repos so verify-image.sh can prove it had consent.
 set -euo pipefail
 
@@ -49,6 +49,6 @@ fetch_key "https://www.virtualbox.org/download/oracle_vbox_2016.asc" \
 cat > "$sources_dir/yaran-virtualbox.list" <<'EOF'
 deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox.asc] https://download.virtualbox.org/virtualbox/debian trixie contrib
 EOF
-echo "yaran-virtualbox.list" >> "$ROOTFS/etc/apt/yaran-vendor-repos"
+echo "download.virtualbox.org" >> "$ROOTFS/etc/apt/yaran-vendor-repos"
 
 echo "vendor-repos-extended: done"

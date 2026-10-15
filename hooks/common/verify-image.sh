@@ -87,10 +87,15 @@ fi
 
 # Vendor (non-Debian) repositories may only exist when the manifest opted in
 # with "vendor_repositories": true. hooks/desktop/vendor-repos*.sh record
-# that consent by listing the .list file they added in
-# /etc/apt/yaran-vendor-repos; a vendor source without a matching consent
-# entry means a hook added a repository on its own, which policy forbids.
-consent=$(cat /etc/apt/yaran-vendor-repos 2>/dev/null || true)
+# that consent by listing the vendor ORIGIN HOST they enabled in
+# /etc/apt/yaran-vendor-repos. Matching is by host, not by filename, because
+# a shipped third-party package can write its own source file for the same
+# origin: google-chrome-stable's postinst unconditionally creates
+# /etc/apt/sources.list.d/google-chrome.sources (deb822) on a new install,
+# next to the .list file the hook wrote. The manifest opted in to that
+# ORIGIN, so both files are covered — while any origin without a consent
+# entry still fails the build.
+consent=$(tr '\n' ' ' < /etc/apt/yaran-vendor-repos 2>/dev/null || true)
 base_hosts=$(sed -n 's|^deb \(\[[^]]*\] \)\?https\?://\([^/ ]*\).*|\2|p' /etc/apt/sources.list 2>/dev/null || true)
 # Extract the origin host from either one-line (.list) or deb822 (.sources)
 # syntax, so a vendor source cannot dodge the consent check by switching
@@ -114,9 +119,8 @@ while IFS= read -r file; do
         case "$base_hosts" in
             *"$host"*) continue ;;
         esac
-        base=$(basename "$file")
-        case "$consent" in
-            *"$base"*) : ;;
+        case " $consent " in
+            *" $host "*) : ;;
             *) problem "vendor repository host $host in $file has no vendor_repositories opt-in" ;;
         esac
     done < <(source_hosts "$file")
@@ -298,7 +302,13 @@ if is_desktop; then
     fi
     # GRUB 2.12 (Debian trixie) has no terminal-color theme property and
     # raises "unknown property" on every boot when the theme uses it.
-    theme_content=$(cat /usr/share/grub/themes/yaran/theme.txt 2>/dev/null || true)
+    # GRUB only parses a property when it appears at the start of a line;
+    # '#' comment lines (which legitimately DOCUMENT this history in
+    # theme.txt) are ignored by the parser, so they must be filtered here
+    # too — otherwise the check reports a false positive on the very
+    # comment that explains why terminal-color was removed.
+    theme_content=$(grep -Ev '^[[:space:]]*#' \
+        /usr/share/grub/themes/yaran/theme.txt 2>/dev/null || true)
     case "$theme_content" in
         *'terminal-color'*)
             problem 'the installed GRUB theme uses terminal-color, unknown to GRUB 2.12'

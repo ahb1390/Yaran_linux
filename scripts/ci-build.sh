@@ -16,7 +16,7 @@ esac
 apt-get install -y --no-install-recommends \
     debootstrap debian-archive-keyring ca-certificates squashfs-tools \
     grub2-common "${grub_packages[@]}" xorriso mtools dosfstools python3 \
-    git
+    git xz-utils
 python3 -m unittest discover -s tests -v
 python3 build.py "$config" --validate
 python3 build.py "$config" --workdir build --outdir output

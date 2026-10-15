@@ -43,8 +43,12 @@ On a Debian amd64 host, install:
 ```sh
 sudo apt-get install debootstrap debian-archive-keyring ca-certificates \
   squashfs-tools grub2-common grub-pc-bin grub-efi-amd64-bin grub-efi-ia32-bin \
-  xorriso mtools dosfstools python3
+  xorriso mtools dosfstools python3 xz-utils
 ```
+
+`xz-utils` keeps `tar -xJf` usable for `.tar.xz` release artifacts on the
+build host; the Node.js install hook additionally falls back to Python's
+stdlib `lzma` module, so it still works on hosts without the `xz` binary.
 
 For ARM use the matching `grub-efi-arm64-bin` or `grub-efi-arm-bin` package instead
 of the amd64/BIOS GRUB packages. Include `/usr/sbin` in root's PATH. A derivative

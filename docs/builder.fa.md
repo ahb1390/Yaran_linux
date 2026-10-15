@@ -26,8 +26,10 @@ sudo python3 build.py examples/debian-minimal.json --workdir build-debian --outd
 ```sh
 sudo apt-get install debootstrap debian-archive-keyring ca-certificates \
   squashfs-tools grub2-common grub-pc-bin grub-efi-amd64-bin grub-efi-ia32-bin \
-  xorriso mtools dosfstools python3
+  xorriso mtools dosfstools python3 xz-utils
 ```
+
+بستهٔ `xz-utils` استخراج `tar -xJf` برای آرشیوهای `.tar.xz` را روی میزبان ساخت ممکن می‌کند؛ هوک نصب Node.js علاوه بر آن به ماژول `lzma` کتابخانهٔ استاندارد پایتون هم رجوع می‌کند، بنابراین روی میزبان‌های بدون باینری `xz` هم کار می‌کند.
 
 برای ARM به‌جای بسته‌های GRUB مربوط به amd64/BIOS، از بسته متناظر `grub-efi-arm64-bin` یا `grub-efi-arm-bin` استفاده کنید. مسیر `/usr/sbin` را در PATH کاربر root قرار دهید. برای یک مشتق (derivative) از دبیان به یک اسکریپت سوئیت debootstrap و کلید امضای آرشیو نیاز است که باید روی میزبان در دسترس باشند؛ برای اوبونتو از یک میزبان ساخت مناسب اوبونتو استفاده کنید یا keyring آرشیو آن را نصب کنید. فیلدهای `debootstrap_script` و `debootstrap_keyring` امکان انتخاب صریح این فایل‌ها را فراهم می‌کنند. هیچ میان‌بری برای دور زدن تأیید امضا وجود ندارد.
 
