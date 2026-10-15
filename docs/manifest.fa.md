@@ -69,6 +69,7 @@ python3 build.py path/to/manifest.json --validate
 | `apt_components` | `["main"]` | به `debootstrap` نیز پاس داده می‌شود؛ باید غیرخالی باشد |
 | `apt_sources` | یک خط `deb` ساخته‌شده از mirror/suite/components | خطوط source کامل. **هیچ مخزن security/updates ضمنی وجود ندارد** — هر مخزنی را که می‌خواهید فهرست کنید، از جمله updates، security، backports و مخازن شخص ثالث |
 | `install_recommends` | `false` | هم بر شبیه‌سازی APT و هم بر نصب واقعی اثر می‌گذارد |
+| `vendor_repositories` | `false` | اجازهٔ صریح برای افزودن مخازن APT **غیر Debian** به `/etc/apt/sources.list.d/` توسط هوک‌ها. بدون این کلید، هر هوک `pre_chroot_scripts` که بستهٔ فروشنده (Google Chrome، VirtualBox و…) داشته باشد در اعتبارسنجی رد می‌شود و `hooks/common/verify-image.sh` اگر منبع فروشنده‌ای خارج از این مجوز بیابد، ساخت را متوقف می‌کند. به‌صورت `YARAN_VENDOR_REPOSITORIES=1` به هوک‌ها منتقل می‌شود |
 | `exclude_packages` | `[]` | به‌صورت pinهای منفی APT نصب می‌شوند که از انتخاب‌شدن بسته‌ها جلوگیری می‌کنند؛ نباید با بسته‌هایی که صریحاً درخواست شده‌اند هم‌پوشانی داشته باشد |
 | `debootstrap_variant` | حذف‌شده | معمولاً `minbase` یا `buildd` |
 | `debootstrap_script`، `debootstrap_keyring` | حذف‌شده | مسیرهای موجود روی میزبان (نسبی به مانیفست یا مطلق) برای انتخاب یک `suite` اسکریپت سفارشی یا keyring امضای سفارشی |

@@ -71,6 +71,7 @@ remain supported; conflicting alias + new key pairs are rejected.
 | `apt_components` | `["main"]` | Also passed to debootstrap; must be nonempty |
 | `apt_sources` | one `deb` line built from mirror/suite/components | Full source lines. **No implicit security/updates repositories** — list every repository you want, including updates, security, backports, and third-party ones |
 | `install_recommends` | `false` | Applies to both APT's simulation and the actual installation |
+| `vendor_repositories` | `false` | Explicit opt-in allowing hooks to add **non-Debian** APT repositories to `/etc/apt/sources.list.d/`. Without it, any `pre_chroot_scripts` hook that ships a vendor package (Google Chrome, VirtualBox, …) fails validation, and `hooks/common/verify-image.sh` fails the build if it finds a vendor source that the manifest did not opt into. Forwarded to hooks as `YARAN_VENDOR_REPOSITORIES=1` |
 | `exclude_packages` | `[]` | Installed as negative APT pins that prevent selection; must not overlap explicitly requested packages |
 | `debootstrap_variant` | omitted | Normally `minbase` or `buildd` |
 | `debootstrap_script`, `debootstrap_keyring` | omitted | Existing host file paths (relative to the manifest or absolute) selecting a custom suite script or signing keyring |

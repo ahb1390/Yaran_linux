@@ -47,6 +47,33 @@ while IFS= read -r file; do
         esac
     done < "$file"
 done < <(find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name 'sources.list' \) -print)
+
+# deb822 (.sources) repositories carry the same fields as one stanza per
+# source (URIs/Signed-By/Trusted). They get the identical policy: no
+# insecure shortcuts, and any non-Debian origin must pin its own keyring.
+while IFS= read -r file; do
+    stanza=$(grep -Ev '^\s*(#|$)' "$file" || true)
+    case "$stanza" in
+        *'Trusted: yes'*|*'allow-insecure: yes'*|*'check-valid-until: no'*)
+            problem "insecure option in deb822 source $file" ;;
+    esac
+    while IFS= read -r uri; do
+        [ -n "$uri" ] || continue
+        case "$uri" in
+            *debian.org*) continue ;;
+        esac
+        case "$stanza" in
+            *'Signed-By:'*)
+                key=$(printf '%s\n' "$stanza" | sed -n 's/^Signed-By: *//p' | head -n1)
+                if [ -n "$key" ] && [ ! -e "$key" ]; then
+                    problem "Signed-By keyring $key missing in $file"
+                fi
+                ;;
+            *) problem "non-Debian deb822 source without Signed-By in $file: $uri" ;;
+        esac
+    done < <(printf '%s\n' "$stanza" | sed -n 's/^URIs: *//p')
+done < <(find /etc/apt -maxdepth 2 -type f -name '*.sources' -print 2>/dev/null)
+
 [ "$fail" -eq 0 ] && ok 'APT sources are signed and minimal'
 
 # If trixie-backports is enabled there must be a pin proving it is required.
@@ -57,6 +84,44 @@ if grep -Rqs 'trixie-backports' /etc/apt/ 2>/dev/null; then
         ok 'trixie-backports present with an explicit package pin'
     fi
 fi
+
+# Vendor (non-Debian) repositories may only exist when the manifest opted in
+# with "vendor_repositories": true. hooks/desktop/vendor-repos*.sh record
+# that consent by listing the .list file they added in
+# /etc/apt/yaran-vendor-repos; a vendor source without a matching consent
+# entry means a hook added a repository on its own, which policy forbids.
+consent=$(cat /etc/apt/yaran-vendor-repos 2>/dev/null || true)
+base_hosts=$(sed -n 's|^deb \(\[[^]]*\] \)\?https\?://\([^/ ]*\).*|\2|p' /etc/apt/sources.list 2>/dev/null || true)
+# Extract the origin host from either one-line (.list) or deb822 (.sources)
+# syntax, so a vendor source cannot dodge the consent check by switching
+# format.
+source_hosts() {
+    case "$1" in
+        *.sources)
+            sed -n 's/^URIs: *//p' "$1" | sed -n 's|^\(\[[^]]*\] \)\?https\?://\([^/ ]*\).*|\2|p'
+            ;;
+        *)
+            sed -n 's|^deb \(\[[^]]*\] \)\?https\?://\([^/ ]*\).*|\2|p' "$1"
+            ;;
+    esac
+}
+while IFS= read -r file; do
+    while IFS= read -r host; do
+        [ -n "$host" ] || continue
+        case "$host" in
+            *.debian.org) continue ;;
+        esac
+        case "$base_hosts" in
+            *"$host"*) continue ;;
+        esac
+        base=$(basename "$file")
+        case "$consent" in
+            *"$base"*) : ;;
+            *) problem "vendor repository host $host in $file has no vendor_repositories opt-in" ;;
+        esac
+    done < <(source_hosts "$file")
+done < <(find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name '*.list' -o -name '*.sources' \) -print 2>/dev/null)
+[ "$fail" -eq 0 ] && ok 'no vendor APT repository without explicit opt-in'
 
 # --- 2. Desktop: no background APT locks -----------------------------------
 if is_desktop; then
@@ -211,10 +276,34 @@ fi
 
 # --- 6. Desktop: boot branding ---------------------------------------------
 if is_desktop; then
-    grub_theme=$(sed -n 's/^GRUB_THEME="\(.*\)"/\1/p' /etc/default/grub.d/50-yaran.cfg 2>/dev/null || true)
+    grub_cfg_file=/etc/default/grub.d/50-yaran.cfg
+    grub_theme=$(sed -n 's/^GRUB_THEME="\(.*\)"/\1/p' "$grub_cfg_file" 2>/dev/null || true)
     if [ -z "$grub_theme" ] || [ ! -f "$grub_theme" ]; then
         problem "GRUB_THEME does not point at an existing theme ($grub_theme)"
     fi
+    # update-grub's 05_debian_theme emits `background_image <path>` for
+    # GRUB_BACKGROUND WITHOUT quoting it, so a path containing whitespace
+    # is truncated at the first space by GRUB and every boot of the
+    # installed system fails with "bitmap file ... is of unsupported format".
+    grub_bg=$(sed -n 's/^GRUB_BACKGROUND="\(.*\)"/\1/p' "$grub_cfg_file" 2>/dev/null || true)
+    if [ -n "$grub_bg" ]; then
+        case "$grub_bg" in
+            *[[:space:]]*)
+                problem "GRUB_BACKGROUND contains whitespace; update-grub emits it unquoted ($grub_bg)"
+                ;;
+            *.png|*.jpg|*.jpeg|*.tga) : ;;
+            *) problem "GRUB_BACKGROUND has an unsupported image format ($grub_bg)" ;;
+        esac
+        [ -f "$grub_bg" ] || problem "GRUB_BACKGROUND does not point at an existing file ($grub_bg)"
+    fi
+    # GRUB 2.12 (Debian trixie) has no terminal-color theme property and
+    # raises "unknown property" on every boot when the theme uses it.
+    theme_content=$(cat /usr/share/grub/themes/yaran/theme.txt 2>/dev/null || true)
+    case "$theme_content" in
+        *'terminal-color'*)
+            problem 'the installed GRUB theme uses terminal-color, unknown to GRUB 2.12'
+            ;;
+    esac
     grep -qx 'Theme=yaran' /etc/plymouth/plymouthd.conf 2>/dev/null || \
         problem 'Plymouth default theme is not yaran'
     test -f /usr/share/plymouth/themes/yaran/yaran.script || \
@@ -224,7 +313,24 @@ if is_desktop; then
     [ "$fail" -eq 0 ] && ok 'GRUB theme and Plymouth splash installed'
 fi
 
-# --- 7. Desktop: Hiddify (when shipped) ------------------------------------
+# --- 7. Desktop: Node.js toolchain (only images that ship it) ---------------
+# The Extended image pins the official Node.js 26 release toolchain under
+# /usr/local (hooks/desktop/install-nodejs26.sh) instead of Debian's
+# nodejs 20.x package; Debian trixie cannot provide 26.x without an external
+# APT repository, which the repository policy forbids.
+if command -v node >/dev/null 2>&1; then
+    node_version=$(node --version 2>/dev/null || true)
+    case "$node_version" in
+        v26.*) ok "Node.js toolchain present ($node_version)" ;;
+        *) problem "node is installed but is not the pinned Node.js 26 toolchain ($node_version)" ;;
+    esac
+    npm_version=$(npm --version 2>/dev/null || true)
+    if [ -z "$npm_version" ]; then
+        problem 'npm is missing or broken next to the Node.js toolchain'
+    fi
+fi
+
+# --- 8. Desktop: Hiddify (when shipped) ------------------------------------
 if is_desktop && dpkg -s hiddify >/dev/null 2>&1; then
     test -x /usr/bin/hiddify || problem 'hiddify is installed but /usr/bin/hiddify is missing'
     hiddify_libs=$(ldd /usr/share/hiddify/hiddify 2>/dev/null || true)

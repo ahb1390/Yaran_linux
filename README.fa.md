@@ -75,8 +75,10 @@ xdg-desktop-portal، فونت‌های کامل فارسی/CJK/ایموجی و �
 **Extended علاوه بر پایه، این‌ها را اضافه می‌کند:** GIMP، VirtualBox نسخهٔ
 ۷٫۲ (از مخزن APT رسمی و امضاشدهٔ Oracle)، VSCodium و Obsidian (نسخه‌های `.deb`
 رسمی و قفل‌شده با تأیید SHA-256) و یک مجموعهٔ ابزار توسعه‌دهنده
-(`build-essential`، `git`، `dkms`، `linux-headers-amd64`، `nodejs`، `npm`،
-`python3`، `python3-pip`، `python3-venv`، `lazygit`).
+(`build-essential`، `git`، `dkms`، `linux-headers-amd64`، Node.js نسخهٔ ۲۶
+همراه با `npm`/`npx` از تاربال رسمی قفل‌شده در `/usr/local` (زیرا Debian trixie
+فقط Node.js نسخهٔ ۲۰ را بسته‌بندی می‌کند و افزودن مخزن APT خارجیخلاف سیاست
+مخازن پروژه است)، `python3`، `python3-pip`، `python3-venv`، `lazygit`).
 
 تصویر ARM64 موارد اختصاصی AMD64 (Google Chrome، Telegram، VirtualBox،
 دانلودهای `.deb` شخص ثالث و برخی بسته‌های VA/VDPAU و ALSA) را حذف می‌کند،

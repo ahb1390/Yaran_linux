@@ -75,8 +75,11 @@ user-initiated via `yaran-update`, see the
 **Extended adds** on top of the base set: GIMP, VirtualBox 7.2 (from
 Oracle's signed APT repository), VSCodium and Obsidian (pinned official
 `.deb` releases with SHA-256 verification), and a development toolchain
-(`build-essential`, `git`, `dkms`, `linux-headers-amd64`, `nodejs`, `npm`,
-`python3`, `python3-pip`, `python3-venv`, `lazygit`).
+(`build-essential`, `git`, `dkms`, `linux-headers-amd64`, Node.js 26 with
+`npm`/`npx` from the pinned official tarball under `/usr/local` (Debian
+trixie only packages Node.js 20.x, and adding an external APT repository
+violates the repository policy), `python3`, `python3-pip`, `python3-venv`,
+`lazygit`).
 
 The ARM64 image omits the AMD64-only components (Google Chrome, Telegram,
 VirtualBox, the vendor `.deb` downloads, and some VA/VDPAU and ALSA

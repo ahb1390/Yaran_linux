@@ -62,6 +62,8 @@
     "kio-extras",
     "breeze",
     "breeze-gtk-theme",
+    "breeze-icon-theme",
+    "hicolor-icon-theme",
     "plasma-nm",
     "plasma-pa",
     "powerdevil",
@@ -112,6 +114,7 @@
     "fonts-hosny-amiri",
     "fonts-noto-color-emoji",
     "fonts-freefont-ttf",
+    "fonts-dejavu-core",
     "hunspell-en-us",
     "hyphen-en-us",
     "libreoffice-writer",
@@ -181,8 +184,6 @@
     "build-essential",
     "git",
     "lazygit",
-    "nodejs",
-    "npm",
     "python3",
     "python3-pip",
     "python3-venv",
@@ -217,6 +218,7 @@
   ],
   "pre_chroot_scripts": [
     "hooks/desktop/stage-assets.sh",
+    "hooks/desktop/install-nodejs26.sh",
     "hooks/desktop/vendor-repos.sh",
     "hooks/desktop/vendor-repos-extended.sh"
   ],
@@ -260,6 +262,7 @@
     "BUG_REPORT_URL": "https://github.com/ahb1390/Yaran_linux/issues"
   },
   "install_recommends": false,
+  "vendor_repositories": true,
   "services": {
     "enable": [
       "sddm",

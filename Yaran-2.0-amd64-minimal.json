@@ -62,6 +62,8 @@
     "kio-extras",
     "breeze",
     "breeze-gtk-theme",
+    "breeze-icon-theme",
+    "hicolor-icon-theme",
     "plasma-nm",
     "plasma-pa",
     "powerdevil",
@@ -109,6 +111,7 @@
     "fonts-hosny-amiri",
     "fonts-noto-color-emoji",
     "fonts-freefont-ttf",
+    "fonts-dejavu-core",
     "hunspell-en-us",
     "hyphen-en-us",
     "libreoffice-writer",
@@ -238,6 +241,7 @@
     "BUG_REPORT_URL": "https://github.com/ahb1390/Yaran_linux/issues"
   },
   "install_recommends": false,
+  "vendor_repositories": true,
   "services": {
     "enable": [
       "sddm",

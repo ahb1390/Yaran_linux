@@ -289,6 +289,48 @@ class BootBrandingTests(unittest.TestCase):
         self.assertIn('desktop-image: "background.png"', content)
         self.assertIn('boot_menu', content)
 
+    def test_grub_theme_uses_only_grub_2_12_properties(self):
+        """GRUB 2.12 (Debian trixie, grub2 2.12-9+deb13u2 on every platform)
+        registers no `terminal-color` theme property — its gfxmenu modules
+        expose only terminal-border/box/font/height/left/top/width — and the
+        parser aborts every boot with
+        `theme.txt:17:26 unknown property 'terminal-color'` plus a
+        "Press any key to continue" when the theme uses it."""
+        theme = ROOT / 'assets/grub-theme/yaran/theme.txt'
+        code = '\n'.join(line for line in theme.read_text().splitlines()
+                         if not line.lstrip().startswith('#'))
+        self.assertNotIn('terminal-color', code)
+        # desktop-color keeps the menu readable if the background image
+        # fails to load; it IS a registered GRUB 2.12 property.
+        self.assertIn('desktop-color:', code)
+
+    def test_grub_background_path_has_no_whitespace(self):
+        """update-grub's 05_debian_theme emits `background_image <path>`
+        for GRUB_BACKGROUND WITHOUT quoting it, so a whitespace-containing
+        path is truncated at the first space by GRUB and every boot of the
+        installed system fails with `bitmap file "/usr/share/wallpapers/Yaran"
+        is of unsupported format`."""
+        hook = (ROOT / 'hooks/desktop/login-branding.sh').read_text()
+        match = re.search(r'^GRUB_BACKGROUND="([^"]*)"', hook, re.M)
+        self.assertIsNotNone(match, 'login-branding must set GRUB_BACKGROUND')
+        background = match.group(1)
+        self.assertNotRegex(background, r'\s',
+                            'GRUB_BACKGROUND must not contain whitespace')
+        self.assertRegex(background, r'\.(png|jpg|jpeg|tga)$',
+                         'GRUB_BACKGROUND must be a GRUB-supported image')
+        self.assertEqual(background, '/usr/share/grub/themes/yaran/background.png',
+                         'fallback must be the space-free theme copy that '
+                         'grub-theme.sh installs')
+
+    def test_theme_txt_references_only_fonts_the_hook_generates(self):
+        """grub-theme.sh generates DejaVuSans.pf2 and DejaVuSansMono.pf2 (or
+        rewrites the theme to Unifont/regular-face fallbacks); every font
+        family theme.txt mentions must be one of those."""
+        theme = (ROOT / 'assets/grub-theme/yaran/theme.txt').read_text()
+        for family in re.findall(r'font\s*[:=]\s*"([^"]+)"', theme):
+            with self.subTest(family=family):
+                self.assertRegex(family, r'^(DejaVu Sans( Mono)?|Unifont) Regular \d+$')
+
     def test_plymouth_theme_assets_exist(self):
         for filename in ('yaran.plymouth', 'yaran.script'):
             self.assertTrue((ROOT / 'assets/plymouth/yaran' / filename).is_file())
@@ -392,6 +434,181 @@ class SpacePathRegressionTests(unittest.TestCase):
         for hook in ('hooks/desktop/grub-theme.sh', 'hooks/desktop/plymouth-theme.sh'):
             with self.subTest(hook=hook):
                 self.assertIn(expected, (ROOT / hook).read_text())
+
+
+class VendorRepositoryPolicyTests(unittest.TestCase):
+    """Nothing in this project may add a non-Debian source to
+    /etc/apt/sources.list.d without an explicit per-manifest opt-in
+    ("vendor_repositories": true). These tests keep the opt-in gate, the
+    consent record and the final in-image check from being weakened."""
+
+    VENDOR_PACKAGES = ('google-chrome-stable', 'virtualbox')
+
+    def vendor_hook(self, name):
+        return (ROOT / 'hooks/desktop' / name).read_text()
+
+    def test_manifests_opt_in_only_when_they_ship_vendor_packages(self):
+        for path in DESKTOP_MANIFESTS + [ROOT / 'Yaran-Server-2.0-amd64.json']:
+            cfg = load(path)
+            with self.subTest(manifest=path.name):
+                ships_vendor = any(
+                    pkg in self.VENDOR_PACKAGES or pkg.startswith('virtualbox')
+                    for pkg in cfg['packages'])
+                opted_in = cfg.get('vendor_repositories', False)
+                self.assertEqual(
+                    opted_in, ships_vendor,
+                    f'{path.name}: vendor_repositories must be true exactly '
+                    'when the manifest ships vendor-repository packages')
+
+    def test_vendor_hooks_gate_on_the_manifest_opt_in(self):
+        for name in ('vendor-repos.sh', 'vendor-repos-extended.sh'):
+            with self.subTest(hook=name):
+                hook = self.vendor_hook(name)
+                self.assertIn('YARAN_VENDOR_REPOSITORIES', hook)
+                self.assertRegex(
+                    hook, r'\[ "\$\{YARAN_VENDOR_REPOSITORIES:-0\}" != "1" \]',
+                    f'{name} must skip everything without the opt-in')
+                # Every written .list file must be recorded so
+                # verify-image.sh can prove the consent existed.
+                self.assertIn('/etc/apt/yaran-vendor-repos', hook)
+
+    def test_vendor_hooks_never_use_insecure_shortcuts(self):
+        for name in ('vendor-repos.sh', 'vendor-repos-extended.sh'):
+            with self.subTest(hook=name):
+                code = '\n'.join(line for line in self.vendor_hook(name).splitlines()
+                                 if not line.lstrip().startswith('#'))
+                for forbidden in ('trusted=yes', 'allow-insecure', 'apt-key',
+                                  'add-apt-repository', 'check-valid-until=no'):
+                    self.assertNotIn(forbidden, code)
+
+    def test_builder_requires_the_opt_in_for_vendor_packages(self):
+        build = (ROOT / 'build.py').read_text()
+        self.assertIn('VENDOR_REPOSITORY_PACKAGES', build)
+        self.assertIn('YARAN_VENDOR_REPOSITORIES', build)
+
+    def test_verify_image_fails_on_a_repo_without_opt_in(self):
+        hook = (ROOT / 'hooks/common/verify-image.sh').read_text()
+        self.assertIn('/etc/apt/yaran-vendor-repos', hook)
+        self.assertIn('has no vendor_repositories opt-in', hook)
+
+    def test_verify_image_covers_both_list_and_deb822_sources(self):
+        """A vendor source must not dodge the policy by switching from the
+        one-line (.list) to the deb822 (.sources) syntax."""
+        hook = (ROOT / 'hooks/common/verify-image.sh').read_text()
+        self.assertIn("'*.sources'", hook, 'the consent scan must read .sources')
+        self.assertIn('URIs:', hook, 'deb822 origins come from URIs:')
+        self.assertIn('Signed-By:', hook, 'deb822 key pinning is Signed-By:')
+        # Both find expressions must include the deb822 glob.
+        self.assertRegex(hook, r"-name '\*\.list' -o -name '\*\.sources'")
+
+    def test_only_vendor_hooks_touch_sources_list_d(self):
+        """No other hook or script may create .list/.sources files or call
+        add-apt-repository; the only allowed writer besides the vendor hooks
+        is the builder itself (build.py writes /etc/apt/sources.list)."""
+        offenders = []
+        for script in sorted((ROOT / 'hooks').rglob('*.sh')):
+            if script.name.startswith('vendor-repos'):
+                continue
+            code = '\n'.join(line for line in script.read_text().splitlines()
+                             if not line.lstrip().startswith('#'))
+            for pattern in ('add-apt-repository', 'apt-key add',
+                            'sources.list.d/'):
+                if pattern in code:
+                    offenders.append(f'{script.relative_to(ROOT)}: {pattern}')
+        self.assertEqual(offenders, [],
+                         'hooks outside vendor-repos*.sh must not add APT sources')
+
+
+class NodeJs26Tests(unittest.TestCase):
+    """The project must ship Node.js 26.x, obtained repeatably and
+    verifiably, without adding an external APT repository."""
+
+    HOOK = ROOT / 'hooks/desktop/install-nodejs26.sh'
+
+    def test_hook_installs_a_pinned_v26_release_with_hashes(self):
+        hook = self.HOOK.read_text()
+        match = re.search(r'^NODE_VERSION="(v(\d+)\.\d+\.\d+)"', hook, re.M)
+        self.assertIsNotNone(match, 'install-nodejs26.sh must pin NODE_VERSION')
+        self.assertEqual(match.group(2), '26',
+                         f'Node.js must come from the 26 release line, got {match.group(1)}')
+        for arch in ('x64', 'arm64'):
+            pinned = re.search(rf'^NODE_SHA256_{arch}="([0-9a-f]{{64}})"', hook, re.M)
+            self.assertIsNotNone(pinned, f'missing pinned SHA-256 for {arch}')
+        # The download must be verified before extraction, and cross-checked
+        # against the upstream manifest next to the tarball.
+        self.assertIn('sha256sum', hook)
+        self.assertIn('SHASUMS256.txt', hook)
+        # No APT repository may be involved.
+        code = '\n'.join(line for line in hook.splitlines()
+                         if not line.lstrip().startswith('#'))
+        for forbidden in ('add-apt-repository', 'sources.list.d', 'apt-key',
+                          'nodesource', 'deb http', 'deb https'):
+            self.assertNotIn(forbidden, code)
+
+    def test_hook_extracts_into_the_platform_suffixed_directory(self):
+        """The upstream tarball extracts to node-<version>-linux-<arch>/;
+        pointing at node-<version>/ silently produces a broken /usr/local/bin
+        (the hook then fails its own bin/node existence check)."""
+        hook = self.HOOK.read_text()
+        self.assertIn('node-$NODE_VERSION-linux-$node_arch', hook)
+
+    def test_extended_ships_the_hook_and_drops_debian_nodejs(self):
+        cfg = load(ROOT / 'Yaran-2.0-amd64-extended.json')
+        self.assertIn('hooks/desktop/install-nodejs26.sh',
+                      cfg['pre_chroot_scripts'])
+        for path in DESKTOP_MANIFESTS + [ROOT / 'Yaran-Server-2.0-amd64.json']:
+            with self.subTest(manifest=path.name):
+                self.assertNotIn('nodejs', load(path)['packages'],
+                                 'Debian trixie only packages Node.js 20.x')
+                self.assertNotIn('npm', load(path)['packages'])
+
+    def test_only_extended_ships_nodejs(self):
+        for path in DESKTOP_MANIFESTS:
+            if path.name.endswith('extended.json'):
+                continue
+            with self.subTest(manifest=path.name):
+                self.assertNotIn('hooks/desktop/install-nodejs26.sh',
+                                 load(path)['pre_chroot_scripts'])
+
+    def test_verify_image_asserts_the_v26_toolchain(self):
+        hook = (ROOT / 'hooks/common/verify-image.sh').read_text()
+        self.assertIn('v26.*', hook)
+        self.assertIn('npm', hook)
+
+
+class DesktopFontIconTests(unittest.TestCase):
+    """The desktop must ship a complete, readable font and icon set."""
+
+    ICON_PACKAGES = {'breeze-icon-theme', 'hicolor-icon-theme'}
+    GRUB_FONT_SOURCE = {'fonts-dejavu-core'}
+
+    def test_every_desktop_manifest_ships_icons_and_grub_fonts(self):
+        for path in DESKTOP_MANIFESTS:
+            cfg = load(path)
+            with self.subTest(manifest=path.name):
+                packages = set(cfg['packages'])
+                missing = (self.ICON_PACKAGES | self.GRUB_FONT_SOURCE) - packages
+                self.assertFalse(missing,
+                                 f'{path.name} is missing: {sorted(missing)}')
+
+    def test_core_text_fonts_cover_ui_mono_persian_and_arabic(self):
+        # Noto Sans (UI), Noto Sans Mono (terminal), Vazirmatn (Persian) and
+        # the Noto Arabic families (shipped inside fonts-noto-core) must all
+        # be present; Amiri is the extra Arabic fallback.
+        for path in DESKTOP_MANIFESTS:
+            cfg = load(path)
+            with self.subTest(manifest=path.name):
+                packages = set(cfg['packages'])
+                for pkg in ('fonts-noto-core', 'fonts-noto-mono',
+                            'fonts-vazirmatn', 'fonts-hosny-amiri'):
+                    self.assertIn(pkg, packages,
+                                  f'{path.name} is missing {pkg}')
+
+    def test_kdeglobals_selects_breeze_icons(self):
+        globals_ = (ROOT / 'assets/yaran-plasma-theme/etc/xdg/kdeglobals').read_text()
+        self.assertIn('IconTheme=breeze', globals_)
+        self.assertIn('breeze', load(DESKTOP_MANIFESTS[0])['packages'],
+                      'the selected icon theme must be installed')
 
 
 class PipefailGrepRegressionTests(unittest.TestCase):

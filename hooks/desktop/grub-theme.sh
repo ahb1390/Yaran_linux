@@ -20,17 +20,28 @@ if [ ! -f "$background" ]; then
 fi
 install -m 0644 "$background" "$theme_dir/background.png"
 
-# Build the theme font from DejaVu Sans (shipped by fonts-dejavu-core, part of
-# the Debian "important" priority set). Fall back to GRUB's bundled Unifont on
-# systems where either tool is missing, rewriting the theme so it references
-# the font that actually exists.
-if command -v grub-mkfont >/dev/null 2>&1 && [ -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf ]; then
-    grub-mkfont --output="$theme_dir/fonts/DejaVuSans.pf2" \
-        /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+# Build the theme fonts from DejaVu Sans and DejaVu Sans Mono (both shipped
+# by fonts-dejavu-core, part of the Debian "important" priority set).
+# theme.txt references each family by name, so BOTH .pf2 files must exist:
+# GRUB cannot silently substitute one theme font for another. If the Mono
+# face is missing the theme is rewritten to the regular face, and if DejaVu
+# is unavailable entirely, GRUB's bundled Unifont is installed under both
+# names so every reference in theme.txt still resolves.
+dejavu_dir=/usr/share/fonts/truetype/dejavu
+if command -v grub-mkfont >/dev/null 2>&1 && [ -f "$dejavu_dir/DejaVuSans.ttf" ]; then
+    grub-mkfont --output="$theme_dir/fonts/DejaVuSans.pf2" "$dejavu_dir/DejaVuSans.ttf"
     echo "grub-theme: generated DejaVu Sans font"
+    if [ -f "$dejavu_dir/DejaVuSansMono.ttf" ]; then
+        grub-mkfont --output="$theme_dir/fonts/DejaVuSansMono.pf2" "$dejavu_dir/DejaVuSansMono.ttf"
+        echo "grub-theme: generated DejaVu Sans Mono font"
+    else
+        echo "grub-theme: DejaVuSansMono.ttf missing; theme falls back to the regular face"
+        sed -i 's/DejaVu Sans Mono/DejaVu Sans/' "$theme_dir/theme.txt"
+    fi
 elif [ -f /usr/share/grub/unicode.pf2 ]; then
     echo "grub-theme: grub-mkfont or DejaVu missing; using bundled Unifont"
     install -m 0644 /usr/share/grub/unicode.pf2 "$theme_dir/fonts/DejaVuSans.pf2"
+    install -m 0644 /usr/share/grub/unicode.pf2 "$theme_dir/fonts/DejaVuSansMono.pf2"
     sed -i 's/DejaVu Sans Mono/Unifont/; s/DejaVu Sans/Unifont/' "$theme_dir/theme.txt"
 else
     echo 'grub-theme: no GRUB font available to build the theme' >&2

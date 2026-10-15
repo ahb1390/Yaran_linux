@@ -39,7 +39,13 @@ Pin-Priority: 990
 
 هر دو هوک (`vendor-repos.sh` و `vendor-repos-extended.sh`) اگر نتوانند کلید امضا را دریافت کنند، چیزی نصب نمی‌کنند و روی میزبان‌های غیر amd64 به‌صورت امن رد می‌شوند.
 
+افزودن مخزن فروشنده یک **تصمیم صریح و مجزا برای هر مانیفست** است: هوک‌ها تنها زمانی اجرا می‌شوند که مانیفست `"vendor_repositories": true` داشته باشد (که به‌صورت `YARAN_VENDOR_REPOSITORIES=1` منتقل می‌شود)، هر فایل `.list` نوشته‌شده را در `/etc/apt/yaran-vendor-repos` ثبت می‌کنند و `hooks/common/verify-image.sh` اگر منبع غیر Debian در `sources.list.d` بدون ورودی مجوز مطابق پیدا شود، ساخت را متوقف می‌کند. مانیفست بدون این کلید هرگز مخزن فروشنده اضافه نمی‌کند — Suiteهای رسمی Debian همیشه دست‌نخورده حفظ می‌شوند.
+
 Hiddify و v2rayN اصلاً از مخزن APT استفاده نمی‌کنند: فایل `.deb` با نسخه و SHA-256 پین‌شده نصب می‌شوند (`hooks/desktop/install-external-apps.sh`).
+
+## Node.js بدون مخزن APT (Extended)
+
+Debian trixie فقط Node.js نسخهٔ ۲۰ را بسته‌بندی می‌کند؛ هر مخزن APT شخص ثالثی که ماژور جدیدتر داشته باشد (مثلاً NodeSource) طبق سیاست بالا ممنوع است. بنابراین تصویر Extended تاربال رسمی **Node.js 26.x** را از `nodejs.org` — که `npm` و `npx` را همراه دارد — از طریق `hooks/desktop/install-nodejs26.sh` در `/usr/local/lib/nodejs` نصب می‌کند. دانلود با یک SHA-256 پین‌شده تأیید **و** با `SHASUMS256.txt` رسمی upstream تطبیق داده می‌شود، بنابراین جایگزین‌شدن فایل upstream ساخت را با شکست مواجه می‌کند. سپس `hooks/common/verify-image.sh` بررسی می‌کند که `node --version` با `v26.` شروع شود و `npm` هم اجرا شود.
 
 ## تغییر Mirror
 

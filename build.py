@@ -210,6 +210,11 @@ def available_grub_modules(grub_dir: Path, requested):
 
 REQUIRED_KEYS = ["distro_name", "version", "suite", "apt_mirror", "packages"]
 
+# Packages that exist only in vendor (non-Debian) APT repositories. Shipping
+# one means the image adds that repository, which the repository policy
+# allows only as an explicit, per-manifest decision ("vendor_repositories").
+VENDOR_REPOSITORY_PACKAGES = ("google-chrome-stable",)
+
 DEFAULTS = {
     "locale": "en_US.UTF-8", "timezone": "UTC",
     "squashfs_compression": "xz", "live_username": "user",
@@ -217,6 +222,7 @@ DEFAULTS = {
     "apt_components": ["main"], "pre_chroot_scripts": [],
     "post_install_scripts": [], "architecture": "amd64",
     "exclude_packages": [], "install_recommends": False,
+    "vendor_repositories": False,
     "live_packages": LIVE_PACKAGES, "boot_append": "quiet",
     "services": {"enable": [], "disable": [], "mask": []},
     "os_release": {},
@@ -267,6 +273,9 @@ def load_config(path: str) -> dict:
     if missing:
         raise BuildError(f"Missing required keys: {', '.join(missing)}")
     cfg = {**copy.deepcopy(DEFAULTS), **cfg}
+    for key in ("install_recommends", "vendor_repositories"):
+        if not isinstance(cfg[key], bool):
+            raise BuildError(f"{key} must be boolean")
     for key in REQUIRED_KEYS[:-1] + ["locale", "timezone"]:
         if not single_line(cfg[key]):
             raise BuildError(f"{key} must be a nonempty single-line string")
@@ -282,11 +291,23 @@ def load_config(path: str) -> dict:
         value = cfg[key]
         if not name_list(value):
             raise BuildError(f"{key} must be a list of valid names")
+    # A package that only exists in a vendor repository proves the image will
+    # add that repository to /etc/apt/sources.list.d — which policy forbids
+    # unless the manifest opts in explicitly.
+    vendor_packages = [
+        package
+        for package in cfg["packages"]
+        if package in VENDOR_REPOSITORY_PACKAGES or package.startswith("virtualbox")
+    ]
+    if vendor_packages and not cfg["vendor_repositories"]:
+        raise BuildError(
+            f"packages {', '.join(sorted(set(vendor_packages)))} come from vendor APT "
+            'repositories; set "vendor_repositories": true in the manifest to '
+            "explicitly allow the image to add those repositories "
+            "(see docs/manifest.md)"
+        )
     if not cfg["apt_components"] or not matches(r"[a-z0-9][a-z0-9+.-]*", cfg["kernel_package"]):
         raise BuildError("apt_components and kernel_package must be valid and nonempty")
-    for key in ("install_recommends",):
-        if not isinstance(cfg[key], bool):
-            raise BuildError(f"{key} must be boolean")
     for key in ("root_password", "live_user_password"):
         if cfg[key] is not None and not single_line(cfg[key], empty=True):
             raise BuildError(f"{key} must be null or a single-line string")
@@ -573,9 +594,16 @@ class LiveBuilder:
     def _run_script(self, script, rootfs_env=False):
         """Run either an inline shell script or a path from the config."""
         script = str(script)
+        if rootfs_env:
+            # Host hooks receive the repository opt-in so vendor hooks can
+            # gate any /etc/apt/sources.list.d addition on it.
+            rootfs_vars = {
+                "ROOTFS": str(self.chroot),
+                "YARAN_VENDOR_REPOSITORIES": "1" if self.cfg["vendor_repositories"] else "0",
+            }
         if "\n" in script or script.lstrip().startswith("#!"):
             if rootfs_env:
-                env = {**os.environ, "ROOTFS": str(self.chroot)}
+                env = {**os.environ, **rootfs_vars}
                 run(["bash", "-eu", "-c", script], env=env, cwd=self.cfg["_config_dir"])
             else:
                 self._chroot(["bash", "-eu", "-c", script])
@@ -584,7 +612,7 @@ class LiveBuilder:
         if not path.is_file():
             raise BuildError(f"Configured script not found: {script}")
         if rootfs_env:
-            env = {**os.environ, "ROOTFS": str(self.chroot)}
+            env = {**os.environ, **rootfs_vars}
             run(["bash", "-eu", str(path)], env=env, cwd=self.cfg["_config_dir"])
         else:
             with tempfile.NamedTemporaryFile(dir=self.chroot / "tmp", prefix="build-hook-", suffix=".sh") as hook:

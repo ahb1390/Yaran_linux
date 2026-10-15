@@ -42,6 +42,27 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaises(BuildError):
             self.load(post_install_scripts=['missing.sh'])
 
+    def test_vendor_packages_require_the_explicit_opt_in(self):
+        """Nothing may add a non-Debian APT repository implicitly: shipping
+        a package that only exists in a vendor repository must fail
+        validation unless the manifest opts in with
+        "vendor_repositories": true."""
+        with self.assertRaises(BuildError) as ctx:
+            self.load(packages=['google-chrome-stable'])
+        self.assertIn('vendor_repositories', str(ctx.exception))
+        cfg = self.load(packages=['google-chrome-stable'],
+                        vendor_repositories=True)
+        self.assertTrue(cfg['vendor_repositories'])
+        # VirtualBox packages come from Oracle's repository as well.
+        with self.assertRaises(BuildError):
+            self.load(packages=['virtualbox-7.2'])
+
+    def test_vendor_repositories_must_be_boolean(self):
+        for value in ('true', 1, [], {}):
+            with self.subTest(value=value), self.assertRaises(BuildError):
+                self.load(vendor_repositories=value)
+        self.assertFalse(self.load()['vendor_repositories'])
+
     def test_nonempty_directory_is_preserved_on_failure(self):
         work = self.root / 'work'
         work.mkdir()
