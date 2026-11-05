@@ -25,9 +25,9 @@ jobs:
           IMAGE_CONFIG: ${{ inputs.config }}
         run: |
           set -euo pipefail
-          docker run --rm --privileged \
-            -v "$GITHUB_WORKSPACE:/work" -w /work \
-            debian:trixie bash scripts/ci-build.sh "$IMAGE_CONFIG" \
+          docker run --rm --privileged \\
+            -v "$GITHUB_WORKSPACE:/work" -w /work \\
+            debian:trixie bash scripts/ci-build.sh "$IMAGE_CONFIG" \\
             2>&1 | tee build.log
       - name: Upload build log
         if: always()
@@ -44,6 +44,9 @@ jobs:
             output/*.sha256
           if-no-files-found: error
           compression-level: 0
+      - name: Split ISOs for GitHub Releases
+        if: inputs.release
+        run: bash scripts/split-release-isos.sh
       - name: Publish release assets
         if: inputs.release
         uses: softprops/action-gh-release@v2
@@ -51,5 +54,5 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           fail_on_unmatched_files: true
           files: |
-            output/*.iso
+            output/*.iso.part*
             output/*.sha256
