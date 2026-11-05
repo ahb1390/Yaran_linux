@@ -25,9 +25,9 @@ jobs:
           IMAGE_CONFIG: ${{ inputs.config }}
         run: |
           set -euo pipefail
-          docker run --rm --privileged \\
-            -v "$GITHUB_WORKSPACE:/work" -w /work \\
-            debian:trixie bash scripts/ci-build.sh "$IMAGE_CONFIG" \\
+          docker run --rm --privileged \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            debian:trixie bash scripts/ci-build.sh "$IMAGE_CONFIG" \
             2>&1 | tee build.log
       - name: Upload build log
         if: always()
