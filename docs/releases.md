@@ -34,16 +34,18 @@ the release matrix from the commit referenced by the release tag.
 
 Before publishing release assets, the workflow splits every generated ISO
 into numbered parts of at most 1800 MiB. This keeps every individual asset
-below GitHub's per-file release limit. The original ISO is not attached as a
-single large file. Each edition publishes:
+below GitHub's per-file release limit (2147483648 bytes). The original ISO
+is not attached as a single large file, and it is only deleted after the
+parts have been verified to reproduce its checksum. Each edition publishes:
 
 - `NAME.iso.part001`, `NAME.iso.part002`, and any following parts;
 - `NAME.iso.sha256` — checksum of the reconstructed original ISO;
 - `NAME.iso.parts.sha256` — checksums of all downloaded parts.
 
 All editions are attached to the same GitHub release. The workflow fails if
-a build does not produce the expected ISO or if release assets cannot be
-prepared.
+a build does not produce the expected ISO, if any release asset is not
+below GitHub's per-file limit, if an unsplit ISO is still present, or if
+release assets cannot be prepared.
 
 ## Cutting a release (maintainers)
 
@@ -71,14 +73,22 @@ directory, the equivalent manual commands are:
 
 ```bash
 sha256sum -c Yaran-2.0-amd64-minimal.iso.parts.sha256
-cat Yaran-2.0-amd64-minimal.iso.part* > Yaran-2.0-amd64-minimal.iso
+cat Yaran-2.0-amd64-minimal.iso.part[0-9]* > Yaran-2.0-amd64-minimal.iso
 sha256sum -c Yaran-2.0-amd64-minimal.iso.sha256
 ```
 
-The first checksum verifies every downloaded part. The final checksum
-verifies that the reconstructed ISO is byte-for-byte identical to the
-original build. If either check fails, download the missing or damaged
-part again before using the ISO.
+The `part[0-9]*` pattern matches only the numbered parts — never the
+`Yaran-2.0-amd64-minimal.iso.parts.sha256` manifest — and the parts are
+zero-padded, so glob order is the same as part order. The first checksum
+verifies every downloaded part. The final checksum verifies that the
+reconstructed ISO is byte-for-byte identical to the original build. If
+either check fails, download the missing or damaged part again before
+using the ISO.
+
+`scripts/join-iso-parts.sh` performs these same steps: it reads the part
+list from the manifest, verifies every part, reconstructs the ISO into a
+temporary file, compares it with `NAME.iso.sha256`, and only then renames
+it into place. It refuses to overwrite an existing `NAME.iso`.
 
 CI artifacts require a GitHub account and are downloaded from the workflow
 run page (`Actions` → select the run → *Artifacts*). Release assets are

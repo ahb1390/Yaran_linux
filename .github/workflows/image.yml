@@ -47,6 +47,44 @@ jobs:
       - name: Split ISOs for GitHub Releases
         if: inputs.release
         run: bash scripts/split-release-isos.sh
+      - name: Verify release assets are within GitHub limits
+        if: inputs.release
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          limit=2147483648
+          status=0
+
+          for file in output/*; do
+            [[ -f $file ]] || continue
+            size=$(stat -c%s -- "$file")
+            if (( size >= limit )); then
+              echo "::error file=${file}::${file} is ${size} bytes; GitHub rejects release assets of ${limit} bytes or more"
+              status=1
+            fi
+            case "$file" in
+              *.iso)
+                echo "::error file=${file}::unsplit ISO ${file} must never be published as a release asset"
+                status=1
+                ;;
+            esac
+          done
+
+          for checksum in output/*.iso.sha256; do
+            iso=${checksum%.sha256}
+            parts=( "${iso}.part"[0-9]* )
+            if (( ${#parts[@]} == 0 )) || [[ ! -f ${iso}.parts.sha256 ]]; then
+              echo "::error file=${checksum}::${iso} has no numbered parts or parts manifest"
+              status=1
+            fi
+          done
+
+          if (( status != 0 )); then
+            echo "Release asset verification failed; nothing may be published." >&2
+            ls -la output >&2 || true
+            exit 1
+          fi
+          echo "All release assets are below ${limit} bytes and consist of numbered parts plus checksums."
       - name: Publish release assets
         if: inputs.release
         uses: softprops/action-gh-release@v2
@@ -54,5 +92,5 @@ jobs:
           tag_name: ${{ github.event.release.tag_name }}
           fail_on_unmatched_files: true
           files: |
-            output/*.iso.part*
+            output/*.iso.part[0-9]*
             output/*.sha256
