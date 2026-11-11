@@ -138,7 +138,7 @@ for the exact execution order.
 | `Yaran-2.0-amd64-extended.json` | Desktop Extended | Adds GIMP, VirtualBox, VSCodium, Obsidian, dev toolchain |
 | `Yaran-2.0-arm64.json` | Desktop ARM64 | Omits AMD64-only applications |
 | `Yaran-Server-2.0-amd64.json` | Server | Headless; CLI installer; SSH disabled on live media |
-| `Yaran-2.0-amd64.json` | Legacy desktop | Kept for compatibility; not built by CI |
+| `Yaran-2.0-amd64.json` | Legacy desktop | Kept for compatibility; built and tested by CI, but excluded from the release matrix |
 
 ## Adding packages safely
 

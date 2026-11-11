@@ -47,6 +47,30 @@ a build does not produce the expected ISO, if any release asset is not
 below GitHub's per-file limit, if an unsplit ISO is still present, or if
 release assets cannot be prepared.
 
+## Edition matrices: what CI builds vs what is released
+
+| Image config | Build & Validate (push) | Release Build (release) |
+|---|---|---|
+| `Yaran-2.0-amd64-minimal.json` | ✅ | ✅ |
+| `Yaran-2.0-amd64-extended.json` | ✅ | ✅ |
+| `Yaran-2.0-arm64.json` | ✅ | ✅ |
+| `Yaran-Server-2.0-amd64.json` | ✅ | ✅ |
+| `Yaran-2.0-amd64.json` (legacy desktop) | ✅ | ❌ excluded intentionally |
+
+The two workflows share every runner and artifact name; the release matrix
+is exactly the build matrix minus the legacy `Yaran-2.0-amd64.json` entry.
+That manifest is kept for compatibility, is built and tested on every push
+to `main`, and is intentionally **not published**: none of the published
+releases (`v2.0`, `v2.1`) ever contained a `Yaran-2.0-amd64.iso`, so
+publishing it would silently change the released edition set.
+
+`tests/test_release_workflows.py` enforces this contract. It fails if an
+edition is added to one workflow but not the other, if a runner or artifact
+label drifts between the matrices, if a push build ever passes
+`release: true` to the shared image workflow, or if the release workflow
+gains any trigger besides a published release. Only the four editions in
+the table above are split, verified, and attached to a release.
+
 ## Cutting a release (maintainers)
 
 1. Make sure the target branch is green and all edition builds pass.

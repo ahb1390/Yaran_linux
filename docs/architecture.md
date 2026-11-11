@@ -23,8 +23,8 @@ branding. All branding, packages, and configuration live in the manifests,
 | Path | Role |
 |---|---|
 | `build.py` | The builder: configuration loading and validation, bootstrap, package installation, hook execution, SquashFS and ISO assembly |
-| `Yaran-2.0-*.json`, `Yaran-Server-2.0-amd64.json` | Image manifests: one JSON file per published edition |
-| `Yaran-2.0-amd64.json` | Legacy single desktop manifest, kept for compatibility, not built by CI |
+| `Yaran-2.0-*.json`, `Yaran-Server-2.0-amd64.json` | Image manifests: one JSON file per edition (four editions are published in releases) |
+| `Yaran-2.0-amd64.json` | Legacy single desktop manifest, kept for compatibility: built and tested by CI, excluded from the release matrix |
 | `hooks/common/` | Hooks shared by desktop and server images (Calamares, Fastfetch, CA certificates, asset cleanup) |
 | `hooks/desktop/` | Desktop-only hooks (Plasma assets, SDDM autologin, firewall, sysctl, vendor repositories, external apps) |
 | `hooks/server/` | Server-only hooks (CLI installer, journald, password policy, firewall, sysctl) |

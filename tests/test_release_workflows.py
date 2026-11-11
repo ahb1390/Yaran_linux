@@ -12,11 +12,15 @@ import re
 import unittest
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOWS = ROOT / '.github' / 'workflows'
 
 GITHUB_ASSET_LIMIT = 2147483648
 DEFAULT_PART_BYTES = 1887436800
+
+LEGACY_CONFIG = 'Yaran-2.0-amd64.json'
 
 RELEASE_CONFIGS = [
     'Yaran-2.0-amd64-minimal.json',
@@ -25,9 +29,27 @@ RELEASE_CONFIGS = [
     'Yaran-Server-2.0-amd64.json',
 ]
 
+# Every manifest that a push to main must build: the four released editions
+# plus the legacy desktop edition that is built but never released.
+BUILD_CONFIGS = [LEGACY_CONFIG] + RELEASE_CONFIGS
+
 
 def read_workflow(name):
     return (WORKFLOWS / name).read_text(encoding='utf-8')
+
+
+def parse_workflow(name):
+    return yaml.safe_load(read_workflow(name))
+
+
+def parse_events(name):
+    """Return the `on:` mapping; PyYAML reads the bare key `on` as True."""
+    data = parse_workflow(name)
+    return data.get(True, data.get('on'))
+
+
+def matrix_entries(name, job):
+    return parse_workflow(name)['jobs'][job]['strategy']['matrix']['include']
 
 
 class ReleaseMatrixTest(unittest.TestCase):
@@ -206,6 +228,100 @@ class ContinuousIntegrationTest(unittest.TestCase):
         rename_index = text.index('mv -- "$join_tmp" "$iso"')
         verify_index = text.index('Verifying the reconstructed ISO')
         self.assertLess(verify_index, rename_index)
+
+
+class EditionMatrixConsistencyTest(unittest.TestCase):
+    """build.yml builds five editions, release.yml publishes four.
+
+    `Yaran-2.0-amd64.json` is a legacy manifest that is built and tested by
+    every push but is intentionally never attached to a release, matching
+    the assets of every published Yaran Linux release so far.  Anything
+    else that differs between the two matrices is drift and must fail here
+    before it fails in a release run.
+    """
+
+    def build_entries(self):
+        entries = [dict(entry) for entry in matrix_entries('build.yml', 'build-desktop')]
+        server = parse_workflow('build.yml')['jobs']['build-server']['with']
+        entries.append({
+            'config': server['config'],
+            'runner': server['runner'],
+            'artifact': server['artifact'],
+        })
+        return entries
+
+    def test_build_matrix_covers_every_manifest(self):
+        configs = [entry['config'] for entry in self.build_entries()]
+        self.assertEqual(configs, BUILD_CONFIGS)
+        self.assertEqual(sorted(configs), sorted(set(configs)))
+
+    def test_release_matrix_is_the_build_matrix_without_the_legacy_edition(self):
+        build = [entry['config'] for entry in self.build_entries()]
+        release = [entry['config'] for entry in matrix_entries('release.yml', 'build')]
+        self.assertEqual(release, RELEASE_CONFIGS)
+        self.assertEqual(
+            [config for config in build if config != LEGACY_CONFIG],
+            release,
+        )
+
+    def test_only_the_legacy_edition_is_excluded_from_releases(self):
+        build = {entry['config'] for entry in self.build_entries()}
+        release = {entry['config'] for entry in matrix_entries('release.yml', 'build')}
+        self.assertEqual(build - release, {LEGACY_CONFIG})
+        self.assertEqual(release - build, set())
+
+    def test_runners_and_artifact_names_agree_across_matrices(self):
+        build = {
+            entry['config']: (entry['runner'], entry['artifact'])
+            for entry in self.build_entries()
+        }
+        for entry in matrix_entries('release.yml', 'build'):
+            self.assertEqual(
+                build[entry['config']],
+                (entry['runner'], entry['artifact']),
+                entry['config'],
+            )
+
+    def test_release_workflow_triggers_only_on_a_published_release(self):
+        events = parse_events('release.yml')
+        self.assertEqual(list(events), ['release'])
+        self.assertEqual(events['release'], {'types': ['published']})
+
+    def test_push_builds_never_ask_image_workflow_to_publish(self):
+        build_text = read_workflow('build.yml')
+        self.assertNotIn('release:', build_text)
+        self.assertNotIn('release: true', build_text)
+        events = parse_events('build.yml')
+        self.assertEqual(set(events), {'push', 'pull_request', 'workflow_dispatch'})
+        # A push run can therefore never attach assets to a release.
+        release_call = parse_workflow('release.yml')['jobs']['build']
+        self.assertIs(release_call['with']['release'], True)
+        build_jobs = parse_workflow('build.yml')['jobs']
+        for job in ('build-desktop', 'build-server'):
+            self.assertNotIn('release', build_jobs[job]['with'], job)
+
+    def test_release_only_steps_stay_gated_in_the_shared_workflow(self):
+        text = read_workflow('image.yml')
+        self.assertEqual(text.count('if: inputs.release'), 3)
+        self.assertIn('default: false', text)
+
+
+class ReleaseMatrixDocumentationTest(unittest.TestCase):
+    """The documented matrix must match the workflows and never contradict CI."""
+
+    def test_legacy_edition_exclusion_is_documented(self):
+        text = (ROOT / 'docs' / 'releases.md').read_text(encoding='utf-8')
+        self.assertIn(LEGACY_CONFIG, text)
+        self.assertRegex(text, r'(?i)intentionally')
+
+    def test_no_document_still_claims_ci_skips_the_legacy_edition(self):
+        for path in sorted((ROOT / 'docs').glob('*.md')):
+            text = path.read_text(encoding='utf-8')
+            self.assertNotIn(
+                'not built by CI',
+                text,
+                f'{path.name} still contradicts the build matrix',
+            )
 
 
 if __name__ == '__main__':
