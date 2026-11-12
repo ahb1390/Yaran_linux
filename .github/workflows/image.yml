@@ -44,6 +44,12 @@ jobs:
             output/*.sha256
           if-no-files-found: error
           compression-level: 0
+      - name: Make build output writable for release packaging
+        if: inputs.release
+        run: |
+          set -euo pipefail
+          [[ -d output ]] || { echo "Build output directory is missing." >&2; exit 1; }
+          sudo chown -R "$(id -u):$(id -g)" -- output
       - name: Split ISOs for GitHub Releases
         if: inputs.release
         run: bash scripts/split-release-isos.sh
