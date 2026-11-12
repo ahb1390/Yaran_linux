@@ -312,7 +312,7 @@ class EditionMatrixConsistencyTest(unittest.TestCase):
 
     def test_release_only_steps_stay_gated_in_the_shared_workflow(self):
         text = read_workflow('image.yml')
-        self.assertEqual(text.count('if: inputs.release'), 3)
+        self.assertEqual(text.count('if: inputs.release'), 4)
         self.assertIn('default: false', text)
 
 
