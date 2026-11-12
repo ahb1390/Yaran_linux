@@ -94,6 +94,16 @@ class ReleaseAssetGuardTest(unittest.TestCase):
     def setUp(self):
         self.text = read_workflow('image.yml')
 
+    def test_release_output_ownership_is_fixed_before_splitting(self):
+        ownership = self.text.index(
+            'name: Make build output writable for release packaging'
+        )
+        split = self.text.index('name: Split ISOs for GitHub Releases')
+        self.assertLess(ownership, split)
+        ownership_step = self.text[ownership:split]
+        self.assertIn('if: inputs.release', ownership_step)
+        self.assertIn('sudo chown -R "$(id -u):$(id -g)" -- output', ownership_step)
+
     def test_split_runs_before_verification_and_publishing(self):
         split = self.text.index('name: Split ISOs for GitHub Releases')
         verify = self.text.index('name: Verify release assets are within GitHub limits')
